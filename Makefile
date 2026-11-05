@@ -11,16 +11,24 @@ export JAVA_HOME := /Applications/Android Studio.app/Contents/jbr/Contents/Home
 endif
 endif
 
-.PHONY: help build cli node mobile gen test test-go test-node test-react-native test-flutter \
-	test-mobile test-android test-ios
+.PHONY: help build cli server desktop binaries node mobile gen test test-go test-node test-react-native test-flutter \
+	test-mobile test-android test-ios clean docker-build docker-up docker-down
 
 help: ## 列出所有目标
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  %-18s %s\n", $$1, $$2}'
 
-build: cli node mobile ## 构建 CLI、Node.js 包和全部移动端包
+build: binaries node mobile ## 构建全部 Go 二进制产物、Node.js 包和全部移动端包
+
+binaries: cli server desktop ## 构建全部 Go 二进制产物 (CLI, Server, Desktop)
 
 cli: ## 构建命令行工具 bin/ohg
-	go build -o bin/ohg ./cmd/ohg
+	go build -ldflags="-s -w" -o bin/ohg ./cmd/ohg
+
+server: ## 构建 Web API 与静态托管服务端 bin/ohg-server
+	go build -ldflags="-s -w" -o bin/ohg-server ./cmd/ohg-server
+
+desktop: ## 构建 Windows 桌面客户端 bin/ohg-desktop
+	go build -ldflags="-s -w" -o bin/ohg-desktop ./cmd/ohg-desktop
 
 node: ## 构建 Node.js 包（wasm）
 	cd bindings/node && npm run build
@@ -68,3 +76,6 @@ docker-up: ## 使用 docker compose 后台构建并启动服务
 
 docker-down: ## 停止并清理 docker compose 容器服务
 	docker compose down
+
+clean: ## 清理构建产物与临时文件
+	rm -rf bin dist
