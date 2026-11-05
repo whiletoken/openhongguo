@@ -7,8 +7,8 @@ WORKDIR /src
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
 
-# Cache go modules
-COPY go.mod go.sum ./
+# Cache go modules (wildcard ensures build succeeds whether go.sum exists or not)
+COPY go.mod go.sum* ./
 RUN go mod download
 
 # Copy source tree
