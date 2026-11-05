@@ -44,6 +44,15 @@ func main() {
 	}
 	_ = os.MkdirAll(dir, 0700)
 
+	// PID file management: validate PID, remove stale PID or terminate old instance to prevent port conflicts and ensure clean restart
+	pidPath := filepath.Join(dir, "ohg-web.pid")
+	pidMgr, err := webserver.AcquirePIDFile(pidPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "警告: PID 管理异常: %v\n", err)
+	} else {
+		defer pidMgr.Release()
+	}
+
 	// Profile store and Client with SmartTransport
 	store := filestore.New(filepath.Join(dir, "anonymous.json"))
 	client, err := adapters.NewClient("", sdk.Options{
@@ -122,6 +131,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_ = httpServer.Shutdown(ctx)
+	if pidMgr != nil {
+		pidMgr.Release()
+	}
 	fmt.Println("服务已停止。")
 }
 

@@ -1,0 +1,17 @@
+.git
+.tools
+.worktrees
+.superpowers
+bin
+dist
+*.exe
+*.exe~
+*.apk
+*.pcap
+*-evidence.json
+docs/rea
+mitm-capture
+tmpderive.go
+.gradle
+data
+cache

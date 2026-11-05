@@ -1,18 +1,12 @@
 package webserver
 
 import (
-	"embed"
 	"io/fs"
+
+	"github.com/beilunyang/openhongguo/web"
 )
 
-//go:embed assets/*
-var assetsFS embed.FS
-
-// EmbeddedAssets returns the embedded web assets filesystem.
+// EmbeddedAssets returns the embedded web assets filesystem from the web package.
 func EmbeddedAssets() fs.FS {
-	sub, err := fs.Sub(assetsFS, "assets")
-	if err != nil {
-		return assetsFS
-	}
-	return sub
+	return web.Assets()
 }

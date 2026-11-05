@@ -1,0 +1,19 @@
+services:
+  openhongguo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openhongguo:latest
+    container_name: openhongguo
+    restart: unless-stopped
+    ports:
+      - "5210:5210"
+    environment:
+      - OHG_ADDR=0.0.0.0
+      - OHG_PORT=5210
+      - OHG_CONFIG_DIR=/data
+      - OHG_CACHE_DIR=/cache
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data:/data
+      - ./cache:/cache

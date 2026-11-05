@@ -20,4 +20,8 @@ docs/rea/
 *.exe
 *.exe~
 .gradle/
+*.pid
+/ohg-server
+/ohg-desktop
+/ohg-web
 
