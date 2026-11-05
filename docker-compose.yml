@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        ALPINE_MIRROR: mirrors.aliyun.com
+        GOPROXY: https://goproxy.cn,direct
     image: openhongguo:latest
     container_name: openhongguo
     restart: unless-stopped

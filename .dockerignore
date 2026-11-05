@@ -1,17 +1,41 @@
-.git
-.tools
-.worktrees
-.superpowers
-bin
-dist
+# ==================== 版本控制与开发工具 ====================
+.git/
+.github/
+.gitignore
+.gitattributes
+.tools/
+.worktrees/
+.superpowers/
+.vscode/
+.idea/
+
+# ==================== 本地编译产物与临时文件 ====================
+bin/
+dist/
 *.exe
 *.exe~
 *.apk
 *.pcap
 *-evidence.json
-docs/rea
-mitm-capture
 tmpderive.go
-.gradle
-data
-cache
+.gradle/
+*.pid
+*.log
+*.tmp
+
+# ==================== 移动端与外部语言绑定 (构建后端无需) ====================
+bindings/
+docs/
+mitm-capture/
+
+# ==================== 本地运行数据与桌面启动脚本 ====================
+data/
+cache/
+start-desktop.bat
+start-web.bat
+start-docker.bat
+start-docker.sh
+Makefile
+Package.swift
+README.md
+create-desktop-shortcut.ps1

@@ -9,6 +9,10 @@ set -e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 cd "$DIR"
 
+# 启用 Docker BuildKit 极速构建引擎与编译缓存
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 echo "========================================================"
 echo "  红果短剧 (OpenHongguo) - Docker 一键打包与启动"
 echo "========================================================"
@@ -31,7 +35,7 @@ fi
 mkdir -p data cache
 
 # 4. 构建并启动容器
-echo "[1/2] 正在构建 Docker 镜像并启动容器..."
+echo "[1/2] 正在使用 BuildKit 极速构建 Docker 镜像并启动容器..."
 if docker compose version >/dev/null 2>&1; then
     echo "检测到 Docker Compose v2，执行编排构建与启动..."
     docker compose up -d --build

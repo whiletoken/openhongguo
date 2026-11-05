@@ -3,6 +3,10 @@ chcp 65001 >nul
 title 红果短剧 - Docker 打包启动脚本
 cd /d "%~dp0"
 
+:: 启用 Docker BuildKit 极速构建引擎与缓存加速
+set DOCKER_BUILDKIT=1
+set COMPOSE_DOCKER_CLI_BUILD=1
+
 echo ========================================================
 echo   红果短剧 (OpenHongguo) - Docker 一键打包与启动
 echo ========================================================
@@ -20,7 +24,7 @@ if %errorlevel% neq 0 goto :no_daemon
 if not exist "data" mkdir data
 if not exist "cache" mkdir cache
 
-echo [1/3] 正在构建 Docker 镜像并启动容器...
+echo [1/3] 正在使用 BuildKit 极速构建 Docker 镜像并启动容器...
 echo.
 
 :: 4. 优先尝试使用 docker compose (v2)
