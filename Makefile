@@ -59,3 +59,12 @@ test-android: ## 编译 Android 版 core，运行 Kotlin 单元测试并打包 a
 test-ios: ## 编译 iOS 版 core，在 macOS 上运行 Swift 测试
 	bindings/mobile/build.sh ios
 	cd bindings/mobile/ios && swift test
+
+docker-build: ## 使用 Dockerfile 构建 openhongguo 镜像
+	docker build -t openhongguo:latest .
+
+docker-up: ## 使用 docker compose 后台构建并启动服务
+	docker compose up -d --build
+
+docker-down: ## 停止并清理 docker compose 容器服务
+	docker compose down
