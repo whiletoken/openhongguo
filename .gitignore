@@ -17,3 +17,5 @@ docs/rea/
 
 # 发布产物：上传到 GitHub Release 的文件
 /dist/
+*.exe
+
