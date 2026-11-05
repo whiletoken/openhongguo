@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -69,3 +70,28 @@ func TestSystemStatusHandler(t *testing.T) {
 		t.Error("expected cache in response")
 	}
 }
+
+func TestStaticMIMETypes(t *testing.T) {
+	srv, err := NewServer(Config{
+		CacheDir: t.TempDir(),
+		StaticFS: EmbeddedAssets(),
+	})
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	handler := srv.Handler()
+
+	req := httptest.NewRequest(http.MethodGet, "/js/app.js", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK for /js/app.js, got %d", resp.StatusCode)
+	}
+	ct := resp.Header.Get("Content-Type")
+	if !strings.Contains(ct, "javascript") {
+		t.Errorf("expected javascript content-type, got: %s", ct)
+	}
+}
+

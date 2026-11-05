@@ -42,7 +42,7 @@
         </nav>
       </div>
 
-      <!-- Search Box -->
+      <!-- Search Box with Search History Dropdown -->
       <div class="header-search">
         <div class="search-input-wrapper">
           <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
@@ -51,6 +51,23 @@
           </svg>
           <input type="text" id="search-input" placeholder="搜索短剧、角色、小说 (按回车搜索)..." autocomplete="off">
           <button id="search-clear" class="search-clear-btn" style="display:none;">&times;</button>
+
+          <!-- Search History Dropdown -->
+          <div class="search-history-dropdown" id="search-history-dropdown" style="display:none;">
+            <div class="search-history-header">
+              <span class="history-title">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                最近搜索
+              </span>
+              <button class="btn-clear-history-tags" id="btn-clear-search-history" type="button" title="清空搜索记录">清空</button>
+            </div>
+            <div class="search-history-tags" id="search-history-tags">
+              <!-- Dynamically populated up to 5 items -->
+            </div>
+          </div>
         </div>
         <button id="search-submit" class="search-btn">搜索</button>
       </div>
@@ -95,9 +112,29 @@
           <!-- Populated by JavaScript -->
         </div>
 
-        <!-- Loading / Load More -->
+        <!-- Pagination & Footer -->
         <div class="grid-footer">
-          <button id="btn-load-more" class="btn-load-more" style="display:none;">加载更多短剧</button>
+          <!-- Pagination Component (Cursor-Based Simple Mode) -->
+          <div class="pagination-container" id="pagination-container" style="display:none;">
+            <div class="pagination-controls">
+              <button class="btn-page" id="btn-page-prev" title="上一页" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>上一页</span>
+              </button>
+              <div class="page-indicator">
+                <span>第 <strong id="pg-current-page">1</strong> 页</span>
+              </div>
+              <button class="btn-page" id="btn-page-next" title="下一页">
+                <span>下一页</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <div id="grid-loader" class="loader-spinner" style="display:none;">
             <div class="spinner"></div>
             <span>正在加载短剧资源...</span>
@@ -128,9 +165,9 @@
                 <div class="now-playing-title" id="player-title">正在加载...</div>
               </div>
 
-              <!-- HTML5 Video Tag -->
+              <!-- Artplayer Video Container -->
               <div class="video-container" id="video-container">
-                <video id="video-element" controls playsinline preload="auto"></video>
+                <div id="artplayer-container" class="artplayer-app"></div>
                 <div class="video-overlay-loading" id="video-loading" style="display:none;">
                   <div class="spinner"></div>
                   <div class="loading-msg" id="video-loading-msg">正在准备流媒体与解密...</div>
@@ -277,6 +314,7 @@
     <div class="toast-container" id="toast-container"></div>
   </div>
 
-  <script src="js/app.js"></script>
+  <script src="js/artplayer.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
