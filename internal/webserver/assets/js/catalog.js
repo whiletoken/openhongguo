@@ -36,14 +36,18 @@ export async function loadCatalogPage(targetPage = 1, reset = false) {
   let cursor = '';
   if (targetPage > 1) {
     const prevData = state.pageStack[targetPage - 2];
-    if (!prevData || !prevData.hasMore || !prevData.cursor) {
+    if (!prevData || !prevData.hasMore || !prevData.cursor || !prevData.cursor.trim()) {
+      showToast('已经是最后一页了', 'info');
+      updatePaginationUI();
       return; // No more pages
     }
-    cursor = prevData.cursor;
+    cursor = prevData.cursor.trim();
   }
 
   state.isLoadingCatalog = true;
   el.gridLoader.style.display = 'flex';
+  if (el.btnPagePrev) el.btnPagePrev.disabled = true;
+  if (el.btnPageNext) el.btnPageNext.disabled = true;
 
   try {
     let page;
@@ -56,12 +60,43 @@ export async function loadCatalogPage(targetPage = 1, reset = false) {
     }
 
     const items = page.items || [];
-    const hasMore = !!(page.has_more || (page.cursor && page.cursor !== ''));
-    const nextCursor = page.cursor || '';
+    const nextCursor = (page.cursor || '').trim();
+
+    // Check if this page has duplicate / repeated items indicating the feed has looped
+    const seenIds = new Set();
+    for (let i = 0; i < targetPage - 1; i++) {
+      if (state.pageStack[i] && state.pageStack[i].items) {
+        state.pageStack[i].items.forEach((it) => {
+          if (it.id) seenIds.add(it.id);
+        });
+      }
+    }
+
+    // Determine how many items are fresh/new
+    const hasNewItems = items.some((it) => it.id && !seenIds.has(it.id));
+
+    // If targetPage > 1 and there are no items, or all items were already seen (circular feed end)
+    if (targetPage > 1 && (items.length === 0 || !hasNewItems)) {
+      if (state.pageStack[targetPage - 2]) {
+        state.pageStack[targetPage - 2].hasMore = false;
+        state.pageStack[targetPage - 2].cursor = '';
+      }
+      showToast('已经是最后一页了', 'info');
+      updatePaginationUI();
+      return;
+    }
+
+    // Strict evaluation of whether a next page exists:
+    // 1. page.has_more must not be false
+    // 2. nextCursor must be present and advanced
+    // 3. items must not be empty
+    const isCursorAdvanced = nextCursor !== '' && nextCursor !== cursor;
+    const isServerHasMore = page.has_more !== false;
+    const hasMore = Boolean(isServerHasMore && isCursorAdvanced && items.length > 0);
 
     state.pageStack[targetPage - 1] = {
       items: items,
-      cursor: nextCursor,
+      cursor: hasMore ? nextCursor : '',
       hasMore: hasMore,
     };
 
@@ -75,6 +110,9 @@ export async function loadCatalogPage(targetPage = 1, reset = false) {
       el.gridEmpty.style.display = 'none';
       renderSeriesCards(items);
       updatePaginationUI();
+      if (targetPage > 1) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
   } catch (err) {
     showToast('加载失败: ' + err.message, 'error');
@@ -84,6 +122,7 @@ export async function loadCatalogPage(targetPage = 1, reset = false) {
   } finally {
     state.isLoadingCatalog = false;
     el.gridLoader.style.display = 'none';
+    updatePaginationUI();
   }
 }
 
@@ -142,10 +181,10 @@ export function updatePaginationUI() {
   el.paginationContainer.style.display = 'flex';
   el.pgCurrentPage.textContent = curPage;
 
-  // Previous Page disabled on page 1
-  el.btnPagePrev.disabled = curPage <= 1;
+  // Previous Page disabled on page 1 or during active loading
+  el.btnPagePrev.disabled = state.isLoadingCatalog || curPage <= 1;
 
-  // Next Page disabled if upstream has no more cursor
-  const hasNext = pageData.hasMore && !!pageData.cursor;
-  el.btnPageNext.disabled = !hasNext;
+  // Next Page disabled if upstream has no more cursor, hasMore is false, or during active loading
+  const hasNext = Boolean(pageData.hasMore && pageData.cursor && pageData.cursor.trim() !== '');
+  el.btnPageNext.disabled = state.isLoadingCatalog || !hasNext;
 }

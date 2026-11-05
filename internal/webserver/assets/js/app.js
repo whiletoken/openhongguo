@@ -155,6 +155,7 @@ function setupEventListeners() {
   // Cursor pagination controls
   if (el.btnPagePrev) {
     el.btnPagePrev.onclick = () => {
+      if (state.isLoadingCatalog) return;
       if (state.currentPage > 1) {
         loadCatalogPage(state.currentPage - 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -163,8 +164,9 @@ function setupEventListeners() {
   }
   if (el.btnPageNext) {
     el.btnPageNext.onclick = () => {
+      if (state.isLoadingCatalog) return;
       const curData = state.pageStack[state.currentPage - 1];
-      if (curData && curData.hasMore && curData.cursor) {
+      if (curData && curData.hasMore && curData.cursor && curData.cursor.trim()) {
         loadCatalogPage(state.currentPage + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }

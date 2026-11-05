@@ -183,7 +183,11 @@ func (sm *StreamManager) EnsureCached(ctx context.Context, episodeID, quality st
 
 // ServeStream handles the HTTP request by serving the cached file with byte-range support.
 func (sm *StreamManager) ServeStream(w http.ResponseWriter, r *http.Request, episodeID, quality string) {
-	target, err := sm.EnsureCached(r.Context(), episodeID, quality)
+	// Decouple file preparation from transient HTTP Range probe disconnects
+	cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	target, err := sm.EnsureCached(cacheCtx, episodeID, quality)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Stream error: %v", err), http.StatusInternalServerError)
 		return

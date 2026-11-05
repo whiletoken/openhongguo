@@ -57,6 +57,7 @@ type activeWindow struct {
 	episodes       []EpisodeItem
 	cancelPrefetch context.CancelFunc
 	isPrefetching  bool
+	prefetchGen    int64
 	lastEvent      string
 }
 
@@ -152,12 +153,14 @@ func (sm *StreamManager) ActivateWindow(ctx context.Context, req WindowPlayReque
 		}
 	}
 
-	// Launch background prefetcher
+	// Launch background prefetcher with generation tag to prevent race conditions
+	sm.window.prefetchGen++
+	gen := sm.window.prefetchGen
 	if len(queue) > 0 {
 		prefetchCtx, cancel := context.WithCancel(context.Background())
 		sm.window.cancelPrefetch = cancel
 		sm.window.isPrefetching = true
-		go sm.runPrefetchQueue(prefetchCtx, queue, req.Quality, keepMap)
+		go sm.runPrefetchQueue(prefetchCtx, queue, req.Quality, keepMap, gen)
 	} else {
 		sm.window.isPrefetching = false
 	}
@@ -165,10 +168,12 @@ func (sm *StreamManager) ActivateWindow(ctx context.Context, req WindowPlayReque
 	return sm.buildStatusLocked(req.SeriesID, req.Quality, currentEpNum)
 }
 
-func (sm *StreamManager) runPrefetchQueue(ctx context.Context, queue []EpisodeItem, quality string, keepMap map[string]bool) {
+func (sm *StreamManager) runPrefetchQueue(ctx context.Context, queue []EpisodeItem, quality string, keepMap map[string]bool, gen int64) {
 	defer func() {
 		sm.window.mu.Lock()
-		sm.window.isPrefetching = false
+		if sm.window.prefetchGen == gen {
+			sm.window.isPrefetching = false
+		}
 		sm.window.mu.Unlock()
 	}()
 

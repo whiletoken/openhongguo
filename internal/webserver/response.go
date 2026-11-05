@@ -2,6 +2,7 @@ package webserver
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -14,5 +15,8 @@ func jsonResponse(w http.ResponseWriter, status int, data any) {
 
 // jsonError writes a standardized JSON error message.
 func jsonError(w http.ResponseWriter, status int, msg string) {
+	if status >= 500 {
+		log.Printf("[SERVER ERROR %d] %s", status, msg)
+	}
 	jsonResponse(w, status, map[string]string{"error": msg})
 }

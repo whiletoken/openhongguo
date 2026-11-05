@@ -327,6 +327,12 @@ export async function notifyActiveCache(ep) {
     };
     const res = await apiPost('/api/cache/active', payload);
     updateCacheWindowUI(res);
+    // Reset to active polling rate (2.5s) while prefetching
+    if (state.cacheWindowTimer) {
+      clearInterval(state.cacheWindowTimer);
+      state.cachePollInterval = 2500;
+      state.cacheWindowTimer = setInterval(pollCacheWindow, 2500);
+    }
     if (res.last_event === 'jump_cleared_refilling') {
       showToast(`已跳级至第 ${ep.number} 集，已清空并重置后10集预载窗口`, 'info', 2200);
     }
@@ -360,6 +366,15 @@ export async function pollCacheWindow() {
   try {
     const res = await apiGet(`/api/cache/window?series_id=${encodeURIComponent(state.currentSeries.id)}&quality=${encodeURIComponent(state.currentQuality)}`);
     updateCacheWindowUI(res);
+    // Adaptive polling: poll at 2.5s while prefetching; back off to 8s once idle
+    if (state.cacheWindowTimer) {
+      const targetInterval = res && res.is_prefetching ? 2500 : 8000;
+      if (state.cachePollInterval !== targetInterval) {
+        state.cachePollInterval = targetInterval;
+        clearInterval(state.cacheWindowTimer);
+        state.cacheWindowTimer = setInterval(pollCacheWindow, targetInterval);
+      }
+    }
   } catch (e) {}
 }
 
