@@ -19,6 +19,8 @@ export const state = {
   currentEpIndex: 0,
   currentQuality: '720p',
   autoplay: true,
+  aspectRatio: 'auto',
+  theaterWide: false,
 
   // History & Tools
   history: [],
@@ -111,6 +113,11 @@ export const el = {
   btnEpNext: document.getElementById('btn-ep-next'),
   chkAutoplay: document.getElementById('chk-autoplay'),
   selectQuality: document.getElementById('select-quality'),
+  selectAspectRatio: document.getElementById('select-aspect-ratio'),
+  btnTheaterMode: document.getElementById('btn-theater-mode'),
+  theaterContainer: document.querySelector('.theater-container'),
+  playerWrapper: document.getElementById('player-wrapper'),
+  videoContainer: document.getElementById('video-container'),
   btnPlayExternal: document.getElementById('btn-play-external'),
   btnDownloadEp: document.getElementById('btn-download-ep'),
 

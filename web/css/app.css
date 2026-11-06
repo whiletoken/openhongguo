@@ -116,7 +116,16 @@ body {
 .nav-channels {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: clamp(2px, 0.4vw, 6px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.nav-channels::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-tab {
@@ -795,9 +804,95 @@ body {
   width: 100%;
   background: #000;
   aspect-ratio: 16 / 9;
+  max-height: min(78vh, 850px);
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  transition: max-height var(--transition-normal), max-width var(--transition-normal), aspect-ratio var(--transition-normal), box-shadow var(--transition-normal);
+  margin: 0 auto;
+}
+
+/* Portrait adaptive (竖屏短剧自适应模式 9:16) */
+.video-container.aspect-portrait {
+  aspect-ratio: 9 / 16;
+  max-height: min(84vh, 880px);
+  width: auto;
+  max-width: min(100%, 500px);
+  box-shadow: 0 4px 35px rgba(0, 0, 0, 0.75);
+}
+
+.video-container.aspect-portrait video {
+  object-fit: contain;
+}
+
+/* 16:9 Standard Wide */
+.video-container.aspect-16-9 {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 4:3 Classic */
+.video-container.aspect-4-3 {
+  aspect-ratio: 4 / 3;
+  width: auto;
+  max-width: min(100%, 860px);
+}
+
+/* Fill / Stretch */
+.video-container.aspect-fill {
+  aspect-ratio: auto;
+  height: min(76vh, 780px);
+  width: 100%;
+}
+
+.video-container.aspect-fill video {
+  object-fit: fill !important;
+}
+
+/* Original Aspect Ratio */
+.video-container.aspect-original video {
+  object-fit: contain !important;
+}
+
+/* Aspect Select & Adaptive Controls */
+.aspect-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.btn-ctrl.active {
+  background: rgba(255, 42, 75, 0.16);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* Wide Theater Mode (剧场大屏自适应) */
+.theater-container.theater-wide {
+  grid-template-columns: 1fr;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.theater-container.theater-wide .theater-left {
+  max-width: 100%;
+}
+
+.theater-container.theater-wide .video-container {
+  max-height: min(86vh, 940px);
+}
+
+.theater-container.theater-wide .theater-right {
+  margin-top: 16px;
+}
+
+.theater-container.theater-wide .series-panel {
+  max-height: none;
 }
 
 .artplayer-app {
@@ -1548,41 +1643,147 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* === Responsive Layout === */
+/* === Comprehensive Fluid & Responsive Layout === */
+@media (max-width: 1200px) {
+  .theater-container {
+    grid-template-columns: 1fr 340px;
+    gap: 18px;
+  }
+}
+
 @media (max-width: 1080px) {
   .theater-container {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   .series-panel {
     max-height: none;
+  }
+  .video-container {
+    max-height: min(72vh, 680px);
+  }
+}
+
+@media (max-width: 900px) {
+  .header-right .btn-label {
+    display: none;
+  }
+  .header-right .btn-icon {
+    padding: 8px 10px;
+  }
+  .header-search {
+    max-width: 280px;
   }
 }
 
 @media (max-width: 768px) {
   .app-header {
-    padding: 0 14px;
-    height: 56px;
+    padding: 0 12px;
+    height: 54px;
+    gap: 8px;
   }
   .header-left {
-    gap: 12px;
+    gap: 10px;
+  }
+  .brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+  .brand-title {
+    font-size: 17px;
   }
   .brand-badge {
     display: none;
   }
   .nav-tab {
-    padding: 5px 10px;
-    font-size: 13px;
+    padding: 5px 9px;
+    font-size: 12.5px;
+  }
+  .header-search {
+    max-width: 200px;
+    min-width: 100px;
+  }
+  .search-input-wrapper input {
+    font-size: 12px;
+    padding: 6px 8px 6px 30px;
+  }
+  .search-icon {
+    left: 8px;
+    width: 14px;
+    height: 14px;
+  }
+  .search-btn {
+    padding: 6px 12px;
+    font-size: 12px;
   }
   .app-main {
-    padding: 14px;
+    padding: 10px 12px 24px;
   }
   .cards-grid {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
-  .history-drawer {
+  .history-drawer,
+  .favorites-drawer {
+    width: 100% !important;
+    right: -100% !important;
+  }
+  .player-extra-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .extra-controls-left,
+  .extra-controls-right {
+    gap: 6px;
+  }
+  .btn-ctrl {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .select-dropdown {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .ep-btn {
+    height: 36px;
+    font-size: 12.5px;
+  }
+  .modal-dialog {
+    width: 95% !important;
+    max-height: 92vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    height: 50px;
+    padding: 0 8px;
+  }
+  .brand-title {
+    font-size: 15px;
+  }
+  .header-search {
+    max-width: 140px;
+  }
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .player-back-bar {
+    padding: 8px 12px;
+  }
+  .now-playing-title {
+    font-size: 13px;
+    max-width: 50%;
+  }
+  .player-extra-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .extra-controls-left,
+  .extra-controls-right {
+    justify-content: space-between;
     width: 100%;
-    right: -100%;
   }
 }
 

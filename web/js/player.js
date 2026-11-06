@@ -117,6 +117,13 @@ export function getOrInitArtPlayer(streamUrl, title) {
     }
   });
 
+  // Auto detect aspect ratio when metadata is loaded
+  art.on('video:loadedmetadata', () => {
+    if (state.aspectRatio === 'auto') {
+      applyAspectRatio('auto');
+    }
+  });
+
   // Error event
   art.on('video:error', () => {
     if (state.loadingTimer) {
@@ -403,4 +410,130 @@ export function switchToCatalog() {
     clearInterval(state.cacheWindowTimer);
     state.cacheWindowTimer = null;
   }
+}
+
+
+export function applyAspectRatio(mode = 'auto') {
+  state.aspectRatio = mode;
+  try { localStorage.setItem('ohg_aspect_ratio', mode); } catch (e) {}
+  if (el.selectAspectRatio && el.selectAspectRatio.value !== mode) {
+    el.selectAspectRatio.value = mode;
+  }
+
+  if (!el.videoContainer) return;
+
+  el.videoContainer.classList.remove(
+    'aspect-portrait',
+    'aspect-16-9',
+    'aspect-4-3',
+    'aspect-fill',
+    'aspect-original'
+  );
+
+  let noticeText = '';
+
+  if (mode === 'auto') {
+    const video = art && art.video;
+    if (video && video.videoWidth && video.videoHeight) {
+      if (video.videoHeight > video.videoWidth) {
+        el.videoContainer.classList.add('aspect-portrait');
+        noticeText = '画面已自适应为 9:16 竖屏模式';
+      } else {
+        el.videoContainer.classList.add('aspect-16-9');
+        noticeText = '画面已自适应为 16:9 宽屏模式';
+      }
+    } else {
+      el.videoContainer.classList.add('aspect-16-9');
+    }
+  } else if (mode === '16:9') {
+    el.videoContainer.classList.add('aspect-16-9');
+    noticeText = '已切换为 16:9 宽屏模式';
+  } else if (mode === '9:16') {
+    el.videoContainer.classList.add('aspect-portrait');
+    noticeText = '已切换为 9:16 竖屏短剧模式';
+  } else if (mode === '4:3') {
+    el.videoContainer.classList.add('aspect-4-3');
+    noticeText = '已切换为 4:3 经典模式';
+  } else if (mode === 'fill') {
+    el.videoContainer.classList.add('aspect-fill');
+    noticeText = '已切换为铺满拉伸模式';
+  } else if (mode === 'original') {
+    el.videoContainer.classList.add('aspect-original');
+    noticeText = '已切换为原始比例模式';
+  }
+
+  if (art) {
+    setTimeout(() => {
+      try {
+        art.resize();
+        if (noticeText && art.notice) {
+          art.notice.show = noticeText;
+        }
+      } catch (e) {}
+    }, 60);
+  }
+}
+
+export function toggleTheaterWide(force) {
+  state.theaterWide = typeof force === 'boolean' ? force : !state.theaterWide;
+  try { localStorage.setItem('ohg_theater_wide', state.theaterWide ? 'true' : 'false'); } catch (e) {}
+
+  if (el.theaterContainer) {
+    el.theaterContainer.classList.toggle('theater-wide', state.theaterWide);
+  }
+
+  if (el.btnTheaterMode) {
+    el.btnTheaterMode.classList.toggle('active', state.theaterWide);
+    const textEl = el.btnTheaterMode.querySelector('.theater-mode-text');
+    if (textEl) {
+      textEl.textContent = state.theaterWide ? '标准分栏' : '大屏模式';
+    }
+  }
+
+  showToast(state.theaterWide ? '已开启剧场大屏模式' : '已恢复标准分栏视图', 'info');
+
+  if (art) {
+    setTimeout(() => {
+      try {
+        art.resize();
+      } catch (e) {}
+    }, 120);
+  }
+}
+
+export function initPlayerPreferences() {
+  const savedAspect = localStorage.getItem('ohg_aspect_ratio') || 'auto';
+  state.aspectRatio = savedAspect;
+  if (el.selectAspectRatio) {
+    el.selectAspectRatio.value = savedAspect;
+  }
+  applyAspectRatio(savedAspect);
+
+  const savedWide = localStorage.getItem('ohg_theater_wide') === 'true';
+  state.theaterWide = savedWide;
+  if (el.theaterContainer) {
+    el.theaterContainer.classList.toggle('theater-wide', savedWide);
+  }
+  if (el.btnTheaterMode) {
+    el.btnTheaterMode.classList.toggle('active', savedWide);
+    const textEl = el.btnTheaterMode.querySelector('.theater-mode-text');
+    if (textEl) {
+      textEl.textContent = savedWide ? '标准分栏' : '大屏模式';
+    }
+  }
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (art && el.viewTheater && el.viewTheater.style.display !== 'none') {
+        try {
+          art.resize();
+          if (state.aspectRatio === 'auto') {
+            applyAspectRatio('auto');
+          }
+        } catch (e) {}
+      }
+    }, 150);
+  });
 }

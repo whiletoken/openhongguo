@@ -21,6 +21,9 @@ import {
   loadEpisode,
   switchToCatalog,
   getArtPlayer,
+  applyAspectRatio,
+  toggleTheaterWide,
+  initPlayerPreferences,
 } from './player.js';
 import {
   openHistory,
@@ -239,6 +242,20 @@ function setupEventListeners() {
     showToast(state.autoplay ? '自动连播已开启' : '自动连播已关闭', 'info');
   };
 
+  // Aspect Ratio / Adaptive Sizing
+  if (el.selectAspectRatio) {
+    el.selectAspectRatio.onchange = () => {
+      applyAspectRatio(el.selectAspectRatio.value);
+    };
+  }
+
+  // Theater Wide Mode Toggle
+  if (el.btnTheaterMode) {
+    el.btnTheaterMode.onclick = () => {
+      toggleTheaterWide();
+    };
+  }
+
   // Quality selector
   el.selectQuality.onchange = () => {
     state.currentQuality = el.selectQuality.value;
@@ -381,6 +398,7 @@ function setupEventListeners() {
 async function boot() {
   loadSearchHistory();
   setupEventListeners();
+  initPlayerPreferences();
   await initSystem();
 
   // Preload favorites and watch history cache

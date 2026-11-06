@@ -242,6 +242,28 @@
                     </select>
                   </div>
 
+                  <!-- Aspect Ratio / Adaptive Sizing Selector -->
+                  <div class="aspect-select-wrapper" title="调整画面自适应比例，完美适配竖屏短剧与横屏视频">
+                    <span class="ctrl-label">画面:</span>
+                    <select id="select-aspect-ratio" class="select-dropdown">
+                      <option value="auto" selected>智能自适应</option>
+                      <option value="16:9">16:9 宽屏</option>
+                      <option value="9:16">9:16 竖屏</option>
+                      <option value="4:3">4:3 经典</option>
+                      <option value="fill">铺满拉伸</option>
+                      <option value="original">原始比例</option>
+                    </select>
+                  </div>
+
+                  <!-- Theater Wide Mode Toggle -->
+                  <button class="btn-ctrl" id="btn-theater-mode" title="切换剧场大屏 / 标准分栏视图">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                      <path d="M10 4v16"></path>
+                    </svg>
+                    <span class="theater-mode-text">大屏模式</span>
+                  </button>
+
                   <!-- External Player Trigger -->
                   <button class="btn-ctrl btn-highlight" id="btn-play-external" title="使用系统本地播放器 (FFplay / MPV / VLC) 独立窗口播放">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
