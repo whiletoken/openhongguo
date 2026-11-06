@@ -16,17 +16,18 @@ echo ========================================================
 
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
-:: 1. 检查并编译桌面客户端
+:: 1. 检查并编译桌面客户端 (Rust 模块)
 if not exist "%DESKTOP_EXE%" (
-    echo 正在首次编译 ohg-desktop.exe 至 bin/ 目录...
-    cd /d "%ROOT_DIR%"
-    go build -ldflags="-s -w" -o "%DESKTOP_EXE%" ./cmd/ohg-desktop
+    echo 正在首次编译 Rust 桌面客户端 ohg-desktop.exe 至 bin/ 目录...
+    cd /d "%ROOT_DIR%\desktop"
+    cargo build --release
     if !errorlevel! neq 0 (
         echo.
-        echo [错误] 桌面客户端编译失败，请检查 Go 开发环境配置与网络依赖。
+        echo [错误] 桌面客户端编译失败，请检查 Rust 开发环境配置。
         pause
         exit /b 1
     )
+    copy /y "%ROOT_DIR%\desktop\target\release\ohg-desktop.exe" "%DESKTOP_EXE%" >nul
 )
 
 :: 2. 检查是否传入了自定义远程服务端参数

@@ -27,8 +27,10 @@ cli: ## 构建命令行工具 bin/ohg
 server: ## 构建 Web API 与静态托管服务端 bin/ohg-server
 	go build -ldflags="-s -w" -o bin/ohg-server ./cmd/ohg-server
 
-desktop: ## 构建 Windows 桌面客户端 bin/ohg-desktop
-	go build -ldflags="-s -w" -o bin/ohg-desktop ./cmd/ohg-desktop
+desktop: ## 构建 Windows 桌面客户端 (Rust) bin/ohg-desktop
+	cd desktop && cargo build --release
+	@mkdir -p bin
+	@cp desktop/target/release/ohg-desktop.exe bin/ohg-desktop.exe 2>/dev/null || cp desktop/target/release/ohg-desktop bin/ohg-desktop 2>/dev/null || true
 
 node: ## 构建 Node.js 包（wasm）
 	cd bindings/node && npm run build
