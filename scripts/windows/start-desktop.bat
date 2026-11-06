@@ -31,5 +31,5 @@ if not exist "%TARGET_EXE%" (
     )
 )
 
-start "" "%TARGET_EXE%"
+start "" "%TARGET_EXE%" %*
 exit /b 0

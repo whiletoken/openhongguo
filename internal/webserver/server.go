@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/internal/media"
 	"github.com/beilunyang/openhongguo/sdk"
@@ -20,7 +21,8 @@ func init() {
 // Server handles Web UI requests and REST APIs.
 type Server struct {
 	client       *sdk.Client
-	historyStore *history.Store
+	historyStore  *history.Store
+	favoriteStore *favorite.Store
 	streamMgr    *StreamManager
 	tools        ToolsInfo
 	mediaLaunch  *media.Launcher
@@ -30,7 +32,8 @@ type Server struct {
 // Config holds configuration for creating a Server.
 type Config struct {
 	Client       *sdk.Client
-	HistoryStore *history.Store
+	HistoryStore  *history.Store
+	FavoriteStore *favorite.Store
 	CacheDir     string
 	StaticFS     fs.FS
 }
@@ -69,7 +72,8 @@ func NewServer(cfg Config) (*Server, error) {
 
 	return &Server{
 		client:       cfg.Client,
-		historyStore: cfg.HistoryStore,
+		historyStore:  cfg.HistoryStore,
+		favoriteStore: cfg.FavoriteStore,
 		streamMgr:    streamMgr,
 		tools:        tools,
 		mediaLaunch:  launcher,
@@ -93,6 +97,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/cache/window", s.handleCacheWindow)
 	mux.HandleFunc("/api/play_external", s.handlePlayExternal)
 	mux.HandleFunc("/api/history", s.handleHistory)
+	mux.HandleFunc("/api/favorites", s.handleFavorites)
 	mux.HandleFunc("/api/cache/clear", s.handleClearCache)
 	mux.HandleFunc("/api/download", s.handleDownload)
 
@@ -118,8 +123,11 @@ func (s *Server) Handler() http.Handler {
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Range, Authorization, X-Requested-With, Cache-Control")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Type, Content-Disposition")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return

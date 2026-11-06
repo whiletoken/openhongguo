@@ -11,6 +11,7 @@ import (
 	"github.com/beilunyang/openhongguo/adapters"
 	"github.com/beilunyang/openhongguo/adapters/filestore"
 	"github.com/beilunyang/openhongguo/internal/cliapp"
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/internal/media"
 	"github.com/beilunyang/openhongguo/sdk"
@@ -53,7 +54,7 @@ func run() int {
 	defer stop()
 	return cliapp.Run(ctx, os.Args[1:], cliapp.Dependencies{
 		Service: client, Profiles: store, Media: media.New(),
-		History: history.NewStore(filepath.Join(dir, "history.json")), Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr,
+		History: history.NewStore(filepath.Join(dir, "history.json")), Favorites: favorite.NewStore(filepath.Join(dir, "favorites.json")), Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr,
 	})
 }
 
@@ -70,7 +71,7 @@ func migrateConfig(oldDir, newDir string) error {
 	if err := os.MkdirAll(newDir, 0700); err != nil {
 		return err
 	}
-	for _, name := range []string{"anonymous.json", "history.json"} {
+	for _, name := range []string{"anonymous.json", "history.json", "favorites.json"} {
 		info, err := os.Lstat(filepath.Join(oldDir, name))
 		if err != nil || !info.Mode().IsRegular() {
 			continue

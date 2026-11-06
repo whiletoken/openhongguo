@@ -17,6 +17,7 @@ import (
 
 	"github.com/beilunyang/openhongguo/adapters/filestore"
 	"github.com/beilunyang/openhongguo/adapters/httptransport"
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	mediapkg "github.com/beilunyang/openhongguo/internal/media"
 	"github.com/beilunyang/openhongguo/internal/protocol"
@@ -1104,6 +1105,48 @@ func TestHistoryListsAndClears(t *testing.T) {
 	}
 	if list, _ := store.List(ctx); len(list) != 0 {
 		t.Fatalf("after clear = %+v", list)
+	}
+}
+
+func TestFavoriteCommands(t *testing.T) {
+	ctx := context.Background()
+	favStore := favorite.NewStore(filepath.Join(t.TempDir(), "favorites.json"))
+	var out bytes.Buffer
+	deps := Dependencies{
+		Favorites: favStore,
+		Stdout:    &out,
+		Stderr:    io.Discard,
+	}
+
+	if code := Run(ctx, []string{"favorite", "add", "7100000000000101"}, deps); code != ExitOK {
+		t.Fatalf("favorite add exit %d", code)
+	}
+
+	out.Reset()
+	if code := Run(ctx, []string{"favorite"}, deps); code != ExitOK {
+		t.Fatalf("favorite list exit %d", code)
+	}
+	if !strings.HasPrefix(out.String(), "7100000000000101\t") {
+		t.Fatalf("favorite list output = %q", out.String())
+	}
+
+	out.Reset()
+	if code := Run(ctx, []string{"favorite", "rm", "7100000000000101"}, deps); code != ExitOK {
+		t.Fatalf("favorite rm exit %d", code)
+	}
+	list, _ := favStore.List(ctx)
+	if len(list) != 0 {
+		t.Fatalf("expected empty list after rm, got %+v", list)
+	}
+
+	// Test clear
+	_ = favStore.Add(ctx, favorite.Entry{SeriesID: "7100000000000101", Title: "测试剧"})
+	if code := Run(ctx, []string{"favorite", "clear"}, deps); code != ExitOK {
+		t.Fatalf("favorite clear exit %d", code)
+	}
+	list, _ = favStore.List(ctx)
+	if len(list) != 0 {
+		t.Fatalf("expected empty list after clear, got %+v", list)
 	}
 }
 

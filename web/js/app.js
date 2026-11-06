@@ -1,7 +1,7 @@
 // OpenHongguo Web - Application Entrypoint & Event Coordinator
 
 import { state, el } from './state.js';
-import { apiGet, apiPost } from './api.js';
+import { apiGet, apiPost, buildApiUrl, getServerUrl } from './api.js';
 import { showToast } from './utils.js';
 import {
   loadSearchHistory,
@@ -28,32 +28,80 @@ import {
   clearHistory,
   setOpenSeriesHandler as setHistoryOpenSeriesHandler,
 } from './history.js';
+import {
+  openFavorites,
+  closeFavorites,
+  clearFavorites,
+  fetchFavorites,
+  toggleFavorite,
+  renderFavoritesList,
+  setOpenSeriesHandler as setFavoritesOpenSeriesHandler,
+} from './favorites.js';
+import {
+  initSettingsEvents,
+  openSettingsModal,
+  closeSettingsModal,
+  setReloadAppHandler,
+} from './settings.js';
 
 // === Connect Subsystems ===
 setCatalogOpenSeriesHandler(openSeries);
 setHistoryOpenSeriesHandler(openSeries);
+setFavoritesOpenSeriesHandler(openSeries);
 
-// === System Status ===
+// === Application Reload & Coordinator ===
+async function reloadApp() {
+  await initSystem();
+  try {
+    await fetchFavorites();
+  } catch (e) {}
+  try {
+    const hData = await apiGet('/api/history');
+    state.history = hData || [];
+  } catch (e) {}
+  loadCatalogPage(1, true);
+}
+setReloadAppHandler(reloadApp);
+
+// === System Status & Server Connectivity ===
 async function initSystem() {
+  const dot = el.systemStatus.querySelector('.status-dot');
+  const text = el.systemStatus.querySelector('.status-text');
+  const srvHost = getServerUrl().replace(/^https?:\/\//, '');
+
   try {
     const data = await apiGet('/api/system/status');
     state.tools = data.tools || {};
-    const dot = el.systemStatus.querySelector('.status-dot');
-    const text = el.systemStatus.querySelector('.status-text');
+    state.serverConnected = true;
+
+    if (el.serverOfflineBanner) el.serverOfflineBanner.style.display = 'none';
 
     if (state.tools.ffmpeg_ready) {
       dot.className = 'status-dot online';
-      text.textContent = 'FFmpeg 就绪';
-      el.systemStatus.title = `FFmpeg: ${state.tools.ffmpeg_path || '已就绪'}\n桌面模式: ${state.tools.desktop_mode ? '支持' : '不支持'}`;
+      text.textContent = `已连接 (${srvHost})`;
+      el.systemStatus.title = `已连接服务端: ${getServerUrl()}\nFFmpeg: ${state.tools.ffmpeg_path || '已就绪'}\n桌面模式: ${state.tools.desktop_mode ? '支持' : '不支持'}\n点击修改服务端配置`;
     } else {
-      dot.className = 'status-dot';
-      text.textContent = '无解密工具';
-      el.systemStatus.title = '未检测到 FFmpeg，受保护视频可能需使用外部播放器';
+      dot.className = 'status-dot warning';
+      text.textContent = `就绪·无FFmpeg (${srvHost})`;
+      el.systemStatus.title = `服务端 ${getServerUrl()} 未检测到 FFmpeg，受保护视频可能需使用外部播放器\n点击修改服务端配置`;
     }
   } catch (e) {
     console.warn('System status fetch failed:', e);
+    state.serverConnected = false;
+    dot.className = 'status-dot offline';
+    text.textContent = '未连接服务端 (点击设置)';
+    el.systemStatus.title = `无法连接服务端: ${getServerUrl()}\n错误: ${e.message}\n点击打开设置配置服务端地址`;
+
+    if (el.serverOfflineBanner) {
+      el.serverOfflineBanner.style.display = 'flex';
+      if (el.serverOfflineText) {
+        el.serverOfflineText.textContent = `当前无法连接到服务端「${getServerUrl()}」，请确认服务端是否启动，或点击「修改地址」重新配置。`;
+      }
+    }
   }
 }
+
+
 
 // === Search Coordination ===
 function triggerSearch(keyword) {
@@ -88,7 +136,12 @@ function setupEventListeners() {
     el.searchClear.style.display = 'none';
     el.catalogFilters.style.display = 'none';
     el.channelTitle.textContent = `${tab.textContent}短剧`;
-    el.channelSubtitle.textContent = `实时更新「${tab.textContent}」分类`;
+    if (state.channel === '收藏') {
+      el.channelTitle.textContent = '⭐ 我的收藏';
+      el.channelSubtitle.textContent = `共收藏了 ${(state.favorites || []).length} 部精彩短剧`;
+    } else {
+        el.channelSubtitle.textContent = `实时更新「${tab.textContent}」分类`;
+    }
 
     switchToCatalog();
     loadCatalog(true);
@@ -201,7 +254,7 @@ function setupEventListeners() {
     const series = state.currentSeries;
     if (!ep) return;
     const fileName = `${series ? series.title : '短剧'}_第${ep.number}集.mp4`;
-    const url = `/api/download?episode_id=${encodeURIComponent(ep.id)}&quality=${encodeURIComponent(state.currentQuality)}&filename=${encodeURIComponent(fileName)}`;
+    const url = buildApiUrl(`/api/download?episode_id=${encodeURIComponent(ep.id)}&quality=${encodeURIComponent(state.currentQuality)}&filename=${encodeURIComponent(fileName)}`);
     showToast('正在开始下载本集...', 'success');
     window.open(url, '_blank');
   };
@@ -229,8 +282,38 @@ function setupEventListeners() {
   // History Drawer
   el.btnHistoryToggle.onclick = openHistory;
   el.btnCloseHistory.onclick = closeHistory;
-  el.drawerOverlay.onclick = closeHistory;
+  el.drawerOverlay.onclick = () => {
+    closeSettingsModal();
+    closeHistory();
+    closeFavorites();
+  };
   el.btnClearHistory.onclick = clearHistory;
+
+  // Favorites Drawer & Actions
+  if (el.btnFavoritesToggle) el.btnFavoritesToggle.onclick = openFavorites;
+  if (el.btnCloseFavorites) el.btnCloseFavorites.onclick = closeFavorites;
+  if (el.btnClearFavorites) el.btnClearFavorites.onclick = clearFavorites;
+  if (el.btnTheaterFav) {
+    el.btnTheaterFav.onclick = () => {
+      if (state.currentSeries) toggleFavorite(state.currentSeries);
+    };
+  }
+  if (el.favoritesSearchInput) {
+    el.favoritesSearchInput.oninput = () => {
+      renderFavoritesList(el.favoritesSearchInput.value);
+    };
+  }
+  // Server Settings & URL sync
+  initSettingsEvents();
+  window.addEventListener('server-url-changed', () => {
+    reloadApp();
+  });
+
+  window.addEventListener('favorites-updated', () => {
+    if (state.channel === '收藏') {
+      loadCatalogPage(1, true);
+    }
+  });
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
@@ -245,6 +328,14 @@ function setupEventListeners() {
     if (e.key === 'Escape') {
       if (el.searchHistoryDropdown && el.searchHistoryDropdown.style.display !== 'none') {
         hideSearchHistory();
+        return;
+      }
+      if (state.settingsOpen) {
+        closeSettingsModal();
+        return;
+      }
+      if (state.favoritesOpen) {
+        closeFavorites();
         return;
       }
       if (state.historyOpen) {
@@ -292,6 +383,10 @@ async function boot() {
   setupEventListeners();
   await initSystem();
 
+  // Preload favorites and watch history cache
+  try {
+    await fetchFavorites();
+  } catch (e) {}
   // Preload watch history cache
   try {
     const hData = await apiGet('/api/history');

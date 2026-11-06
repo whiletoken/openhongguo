@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/sdk"
 	"github.com/beilunyang/openhongguo/sdk/model"
@@ -208,6 +209,11 @@ func printValue(w io.Writer, v any, asJSON bool) error {
 		}
 	case *sdk.DeviceProfile:
 		fmt.Fprintf(w, "device_id=%s\ninstall_id=%s\n", x.DeviceID, x.InstallID)
+	case []favorite.Entry:
+		for _, e := range x {
+			fmt.Fprintf(w, "%s\t%s\t全%d集\t%s\n", e.SeriesID, e.Title, e.EpisodeCount,
+				e.CreatedAt.Local().Format("2006-01-02 15:04"))
+		}
 	case []history.Entry:
 		for _, e := range x {
 			state := "watching"

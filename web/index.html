@@ -39,6 +39,7 @@
           <button class="nav-tab" data-channel="找剧">找剧</button>
           <button class="nav-tab" data-channel="电影">电影</button>
           <button class="nav-tab" data-channel="经典">经典</button>
+          <button class="nav-tab" data-channel="收藏">⭐ 收藏</button>
         </nav>
       </div>
 
@@ -74,12 +75,27 @@
 
       <!-- Right Action Tools -->
       <div class="header-right">
+        <button class="btn-icon" id="btn-favorites-toggle" title="我的收藏夹">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <span class="btn-label">收藏</span>
+          <span class="badge-count" id="fav-count-badge" style="display:none;">0</span>
+        </button>
         <button class="btn-icon" id="btn-history-toggle" title="观看历史">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
           <span class="btn-label">历史</span>
+        </button>
+
+        <button class="btn-icon" id="btn-settings-toggle" title="配置服务端 API 地址">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span class="btn-label">设置</span>
         </button>
 
         <div class="status-indicator" id="system-status-indicator" title="检测系统组件状态">
@@ -91,6 +107,21 @@
 
     <!-- Main Content Container -->
     <main class="app-main">
+      <!-- Server Connection Offline Alert Banner -->
+      <div class="server-offline-banner" id="server-offline-banner" style="display:none;">
+        <div class="banner-left">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span class="banner-text" id="server-offline-text">未连接到服务端，请启动 ohg-server 或在设置中配置服务端地址。</span>
+        </div>
+        <div class="banner-actions">
+          <button class="btn-banner-action" id="btn-banner-retry" type="button">重试连接</button>
+          <button class="btn-banner-action btn-banner-primary" id="btn-banner-settings" type="button">修改服务端地址</button>
+        </div>
+      </div>
       <!-- Catalog Grid View -->
       <section id="view-catalog" class="view-section active">
         <div class="section-header">
@@ -244,7 +275,15 @@
                   <img id="theater-series-cover" src="" alt="封面" class="meta-cover">
                 </div>
                 <div class="meta-details">
-                  <h3 class="meta-title" id="theater-series-title">短剧标题</h3>
+                  <div class="meta-title-row">
+                    <h3 class="meta-title" id="theater-series-title">短剧标题</h3>
+                    <button class="btn-theater-fav" id="btn-theater-fav" title="加入我的收藏夹" type="button">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      <span class="btn-fav-text">收藏短剧</span>
+                    </button>
+                  </div>
                   <div class="meta-stats" id="theater-series-stats">
                     <span class="stat-badge badge-primary" id="theater-ep-count">全0集</span>
                     <span class="stat-badge" id="theater-heat">热度 0</span>
@@ -290,6 +329,33 @@
     </main>
 
     <!-- Slide-out History Drawer -->
+    <!-- Slide-out Favorites Drawer -->
+    <aside class="history-drawer favorites-drawer" id="favorites-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="#fadb14" stroke="#fadb14" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+          <h3>我的收藏</h3>
+          <span class="drawer-count-badge" id="favorites-drawer-count">(0)</span>
+        </div>
+        <div class="drawer-actions">
+          <button class="btn-text-danger" id="btn-clear-favorites">清空收藏</button>
+          <button class="btn-close" id="btn-close-favorites">&times;</button>
+        </div>
+      </div>
+      <div class="drawer-search-bar">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="favorites-search-input" placeholder="在收藏夹中搜索...">
+      </div>
+      <div class="drawer-content" id="favorites-list">
+        <!-- Favorites items -->
+      </div>
+    </aside>
+
     <aside class="history-drawer" id="history-drawer">
       <div class="drawer-header">
         <div class="drawer-title">
@@ -308,6 +374,40 @@
         <!-- History items -->
       </div>
     </aside>
+    <!-- Server Settings Modal -->
+    <div class="settings-modal" id="settings-modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <div class="modal-title">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <h3>服务端连接配置</h3>
+          </div>
+          <button class="btn-close" id="btn-close-settings">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-form-group">
+            <label for="input-server-url" class="setting-label">服务端 API 地址 (Server Address)</label>
+            <div class="setting-tip">客户端通过向服务端请求获取短剧、缓存并解析流媒体。可指向本地服务端（如 http://127.0.0.1:5210）、局域网 IP（如 http://192.168.1.100:5210）或远程服务器。</div>
+            <div class="server-input-row">
+              <input type="text" id="input-server-url" class="setting-input" placeholder="http://127.0.0.1:5210" autocomplete="off">
+              <button class="btn-secondary" id="btn-test-connection" type="button">测试连接</button>
+            </div>
+            <div class="test-result-wrapper" id="test-connection-result"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-text-muted" id="btn-reset-server" type="button">恢复默认</button>
+          <div class="modal-footer-actions">
+            <button class="btn-secondary" id="btn-cancel-settings" type="button">取消</button>
+            <button class="btn-primary" id="btn-save-settings" type="button">保存并应用</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="drawer-overlay" id="drawer-overlay"></div>
 
     <!-- Toast Notification Container -->

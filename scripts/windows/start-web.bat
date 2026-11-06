@@ -32,5 +32,5 @@ if not exist "%TARGET_EXE%" (
 )
 
 cd /d "%ROOT_DIR%"
-"%TARGET_EXE%" -open=true
+"%TARGET_EXE%" -open=true %*
 pause

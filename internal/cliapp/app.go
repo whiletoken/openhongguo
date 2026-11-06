@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/internal/media"
 	"github.com/beilunyang/openhongguo/sdk"
@@ -75,13 +76,23 @@ type WatchHistory interface {
 	Clear(ctx context.Context) error
 }
 
+// FavoriteStore holds user favorite series.
+type FavoriteStore interface {
+	Get(ctx context.Context, seriesID string) (favorite.Entry, bool, error)
+	Add(ctx context.Context, e favorite.Entry) error
+	Remove(ctx context.Context, seriesID string) error
+	List(ctx context.Context) ([]favorite.Entry, error)
+	Clear(ctx context.Context) error
+}
+
 // Dependencies wires the CLI to the shipped SDK. History is optional; without
 // it playback is not remembered and --resume is unavailable.
 type Dependencies struct {
 	Service  Service
 	Profiles ProfileStore
 	Media    Media
-	History  WatchHistory
+	History   WatchHistory
+	Favorites FavoriteStore
 	// Stdin answers the --pick prompt.
 	Stdin          io.Reader
 	Stdout, Stderr io.Writer
@@ -175,6 +186,8 @@ func dispatch(ctx context.Context, args []string, d Dependencies) error {
 		return cmdDevice(ctx, args[1:], d)
 	case "history":
 		return cmdHistory(ctx, args[1:], d)
+	case "favorite", "favorites", "fav":
+		return cmdFavorite(ctx, args[1:], d)
 	case "continue":
 		return cmdContinue(ctx, args[1:], d)
 	case "download":
@@ -216,6 +229,10 @@ const helpText = `ohg — anonymous short-drama catalog and playback
                           [--jobs N] [--quality Q]
   ohg history [--json]
   ohg history clear
+  ohg favorite [--json]
+  ohg favorite add <series-id>
+  ohg favorite rm <series-id>
+  ohg favorite clear
   ohg device show
   ohg device reset
 
@@ -298,6 +315,70 @@ func cmdHistory(ctx context.Context, args []string, d Dependencies) error {
 		return usage("history takes no arguments other than clear")
 	}
 	entries, err := d.History.List(ctx)
+	if err != nil {
+		return err
+	}
+	return printValue(d.Stdout, entries, f.json)
+}
+
+func cmdFavorite(ctx context.Context, args []string, d Dependencies) error {
+	if d.Favorites == nil {
+		return errors.New("favorites store is not configured")
+	}
+	if len(args) == 0 {
+		entries, err := d.Favorites.List(ctx)
+		if err != nil {
+			return err
+		}
+		return printValue(d.Stdout, entries, false)
+	}
+	if len(args) == 1 && args[0] == "clear" {
+		return d.Favorites.Clear(ctx)
+	}
+	if len(args) == 2 && args[0] == "rm" {
+		return d.Favorites.Remove(ctx, args[1])
+	}
+	if len(args) == 2 && args[0] == "add" {
+		id, err := validateID(args[1])
+		if err != nil {
+			return err
+		}
+		var title string
+		var count int
+		var heat int64
+		var cover string
+		var tags []string
+		if d.Service != nil {
+			if s, err := d.Service.GetSeries(ctx, id); err == nil {
+				title = s.Title
+				count = s.EpisodeCount
+				heat = s.Heat
+				cover = s.CoverURL
+				if s.Category != "" {
+					tags = []string{s.Category}
+				}
+			}
+		}
+		if title == "" {
+			title = id
+		}
+		return d.Favorites.Add(ctx, favorite.Entry{
+			SeriesID:     id,
+			Title:        title,
+			CoverURL:     cover,
+			EpisodeCount: count,
+			Heat:         heat,
+			Tags:         tags,
+		})
+	}
+	f, err := parseFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.rest) != 0 {
+		return usage("unknown favorite subcommand or arguments")
+	}
+	entries, err := d.Favorites.List(ctx)
 	if err != nil {
 		return err
 	}

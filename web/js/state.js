@@ -22,8 +22,12 @@ export const state = {
 
   // History & Tools
   history: [],
+  favorites: [],
   tools: {},
   historyOpen: false,
+  favoritesOpen: false,
+  serverConnected: false,
+  settingsOpen: false,
 
   // Cache Window State
   cachedEpIDs: new Set(),
@@ -68,8 +72,34 @@ export const el = {
   btnClearHistory: document.getElementById('btn-clear-history'),
   historyList: document.getElementById('history-list'),
 
+  // Favorites Drawer & Controls
+  btnFavoritesToggle: document.getElementById('btn-favorites-toggle'),
+  favCountBadge: document.getElementById('fav-count-badge'),
+  favoritesDrawer: document.getElementById('favorites-drawer'),
+  btnCloseFavorites: document.getElementById('btn-close-favorites'),
+  btnClearFavorites: document.getElementById('btn-clear-favorites'),
+  favoritesList: document.getElementById('favorites-list'),
+  favoritesSearchInput: document.getElementById('favorites-search-input'),
+  favoritesDrawerCount: document.getElementById('favorites-drawer-count'),
+  btnTheaterFav: document.getElementById('btn-theater-fav'),
+
   // System Status
   systemStatus: document.getElementById('system-status-indicator'),
+
+  // Settings & Server Connection
+  btnSettingsToggle: document.getElementById('btn-settings-toggle'),
+  settingsModal: document.getElementById('settings-modal'),
+  btnCloseSettings: document.getElementById('btn-close-settings'),
+  btnCancelSettings: document.getElementById('btn-cancel-settings'),
+  btnSaveSettings: document.getElementById('btn-save-settings'),
+  btnResetServer: document.getElementById('btn-reset-server'),
+  inputServerUrl: document.getElementById('input-server-url'),
+  btnTestConnection: document.getElementById('btn-test-connection'),
+  testConnectionResult: document.getElementById('test-connection-result'),
+  serverOfflineBanner: document.getElementById('server-offline-banner'),
+  serverOfflineText: document.getElementById('server-offline-text'),
+  btnBannerRetry: document.getElementById('btn-banner-retry'),
+  btnBannerSettings: document.getElementById('btn-banner-settings'),
 
   // Theater / Player Elements
   artplayerContainer: document.getElementById('artplayer-container'),

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestMigrateConfigCopiesProfileAndHistoryOnce(t *testing.T) {
 	if err := os.MkdirAll(oldDir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	for name, body := range map[string]string{"anonymous.json": "profile", "history.json": "history", "other.txt": "x"} {
+	for name, body := range map[string]string{"anonymous.json": "profile", "history.json": "history", "favorites.json": "favorites", "other.txt": "x"} {
 		if err := os.WriteFile(filepath.Join(oldDir, name), []byte(body), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -20,12 +21,12 @@ func TestMigrateConfigCopiesProfileAndHistoryOnce(t *testing.T) {
 	if err := migrateConfig(oldDir, newDir); err != nil {
 		t.Fatal(err)
 	}
-	for name, want := range map[string]string{"anonymous.json": "profile", "history.json": "history"} {
+	for name, want := range map[string]string{"anonymous.json": "profile", "history.json": "history", "favorites.json": "favorites"} {
 		got, err := os.ReadFile(filepath.Join(newDir, name))
 		if err != nil || string(got) != want {
 			t.Fatalf("%s = %q err %v", name, got, err)
 		}
-		if info, _ := os.Stat(filepath.Join(newDir, name)); info.Mode().Perm() != 0600 {
+		if info, _ := os.Stat(filepath.Join(newDir, name)); runtime.GOOS != "windows" && info.Mode().Perm() != 0600 {
 			t.Fatalf("%s mode %o", name, info.Mode().Perm())
 		}
 	}

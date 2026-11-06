@@ -12,11 +12,13 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/beilunyang/openhongguo/adapters"
 	"github.com/beilunyang/openhongguo/adapters/filestore"
+	"github.com/beilunyang/openhongguo/internal/favorite"
 	"github.com/beilunyang/openhongguo/internal/history"
 	"github.com/beilunyang/openhongguo/internal/webserver"
 	"github.com/beilunyang/openhongguo/sdk"
@@ -82,6 +84,7 @@ func main() {
 	}
 
 	histStore := history.NewStore(filepath.Join(dir, "history.json"))
+	favStore := favorite.NewStore(filepath.Join(dir, "favorites.json"))
 
 	// Web frontend assets
 	staticFS := web.Assets()
@@ -92,7 +95,8 @@ func main() {
 	// Create Web Server
 	srv, err := webserver.NewServer(webserver.Config{
 		Client:       client,
-		HistoryStore: histStore,
+		HistoryStore:  histStore,
+		FavoriteStore: favStore,
 		CacheDir:     *cacheDir,
 		StaticFS:     staticFS,
 	})
@@ -101,18 +105,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	listenAddr := fmt.Sprintf("%s:%d", *addr, *port)
+	listenHost := *addr
+	listenPort := *port
+	if strings.Contains(*addr, ":") {
+		if host, p, err := net.SplitHostPort(*addr); err == nil {
+			listenHost = host
+			if parsedPort, err := strconv.Atoi(p); err == nil {
+				listenPort = parsedPort
+			}
+		}
+	}
+	listenAddr := fmt.Sprintf("%s:%d", listenHost, listenPort)
 	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "端口监听失败 (%s): %v\n", listenAddr, err)
 		os.Exit(1)
 	}
 
-	displayHost := *addr
-	if displayHost == "0.0.0.0" {
+	displayHost := listenHost
+	if displayHost == "" || displayHost == "0.0.0.0" {
 		displayHost = "127.0.0.1"
 	}
-	url := fmt.Sprintf("http://%s:%d", displayHost, *port)
+	url := fmt.Sprintf("http://%s:%d", displayHost, listenPort)
 
 	httpServer := &http.Server{
 		Handler: srv.Handler(),

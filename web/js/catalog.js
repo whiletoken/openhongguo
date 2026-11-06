@@ -3,6 +3,7 @@
 import { state, el } from './state.js';
 import { apiGet } from './api.js';
 import { escapeHtml, showToast, formatHeat } from './utils.js';
+import { isFavorited, toggleFavorite } from './favorites.js';
 
 let openSeriesHandler = null;
 
@@ -20,6 +21,36 @@ export async function loadCatalogPage(targetPage = 1, reset = false) {
     el.seriesGrid.innerHTML = '';
     el.gridEmpty.style.display = 'none';
     if (el.paginationContainer) el.paginationContainer.style.display = 'none';
+  }
+
+  // Favorites Channel Mode (local in-memory collection)
+  if (state.channel === '收藏') {
+    state.isLoadingCatalog = false;
+    el.gridLoader.style.display = 'none';
+    const favItems = (state.favorites || []).map((f) => ({
+      id: f.series_id,
+      title: f.title,
+      cover_url: f.cover_url,
+      episode_count: f.episode_count,
+      heat: f.heat,
+      tags: f.tags,
+    }));
+    state.pageStack = [{
+      items: favItems,
+      cursor: '',
+      hasMore: false,
+    }];
+    state.currentPage = 1;
+    if (favItems.length === 0) {
+      el.gridEmpty.style.display = 'flex';
+      el.seriesGrid.innerHTML = '';
+      if (el.paginationContainer) el.paginationContainer.style.display = 'none';
+    } else {
+      el.gridEmpty.style.display = 'none';
+      renderSeriesCards(favItems);
+      updatePaginationUI();
+    }
+    return;
   }
 
   // Fast-path: if targetPage is already cached in memory stack, render instantly (0ms)
@@ -149,10 +180,16 @@ export function renderSeriesCards(items) {
     const epLabel = item.episode_count ? `全${item.episode_count}集` : '';
     const heat = item.heat ? `🔥 ${formatHeat(item.heat)}` : '';
     const tags = (item.tags || []).slice(0, 2).map((t) => `<span class="card-tag">${escapeHtml(t)}</span>`).join('');
+    const fav = isFavorited(item.id);
 
     card.innerHTML = `
       <div class="card-poster-wrapper">
         <img class="card-poster" src="${escapeHtml(coverUrl)}" alt="${escapeHtml(item.title || '短剧')}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 400%22><rect width=%22300%22 height=%22400%22 fill=%22%23222%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23888%22 font-size=%2220%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>红果短剧</text></svg>'">
+        <button class="card-fav-btn ${fav ? 'active' : ''}" data-series-id="${escapeHtml(item.id)}" title="${fav ? '已收藏 (点击取消)' : '加入收藏'}" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="${fav ? '#fadb14' : 'none'}" stroke="${fav ? '#fadb14' : '#ffffff'}" stroke-width="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </button>
         ${epLabel ? `<span class="card-badge-top">${escapeHtml(epLabel)}</span>` : ''}
         ${item.status === 0 ? `<span class="card-badge-bottom">连载中</span>` : ''}
       </div>
@@ -164,6 +201,14 @@ export function renderSeriesCards(items) {
         </div>
       </div>
     `;
+
+    const favBtn = card.querySelector('.card-fav-btn');
+    if (favBtn) {
+      favBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleFavorite(item);
+      };
+    }
     el.seriesGrid.appendChild(card);
   });
 }

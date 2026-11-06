@@ -95,3 +95,24 @@ func TestStaticMIMETypes(t *testing.T) {
 	}
 }
 
+
+
+func TestCORSHeadersAndPreflight(t *testing.T) {
+	srv := &Server{}
+	handler := srv.Handler()
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/discover", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 OK for OPTIONS preflight, got %d", resp.StatusCode)
+	}
+	if origin := resp.Header.Get("Access-Control-Allow-Origin"); origin != "*" {
+		t.Errorf("expected Access-Control-Allow-Origin '*', got %q", origin)
+	}
+	if methods := resp.Header.Get("Access-Control-Allow-Methods"); !strings.Contains(methods, "GET") {
+		t.Errorf("expected methods to contain GET, got %q", methods)
+	}
+}

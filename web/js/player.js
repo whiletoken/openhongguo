@@ -1,9 +1,10 @@
 // OpenHongguo Web - Video Player & Theater Mode Module
 
 import { state, el } from './state.js';
-import { apiGet, apiPost } from './api.js';
+import { apiGet, apiPost, buildApiUrl } from './api.js';
 import { formatHeat, showToast, escapeHtml } from './utils.js';
 import { saveCurrentHistory } from './history.js';
+import { updateTheaterFavButton } from './favorites.js';
 
 let art = null;
 
@@ -143,6 +144,7 @@ export async function openSeries(seriesId, targetEpNum = 1) {
     ]);
 
     state.currentSeries = series;
+    updateTheaterFavButton();
     state.episodes = epPage.items || [];
 
     // Update meta in UI
@@ -203,7 +205,7 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
     el.videoLoadingMsg.textContent = `正在准备第 ${ep.number} 集流媒体与解密...`;
   }, 250);
 
-  const streamUrl = `/api/stream?episode_id=${encodeURIComponent(ep.id)}&series_id=${encodeURIComponent(series ? series.id : '')}&quality=${encodeURIComponent(state.currentQuality)}`;
+  const streamUrl = buildApiUrl(`/api/stream?episode_id=${encodeURIComponent(ep.id)}&series_id=${encodeURIComponent(series ? series.id : '')}&quality=${encodeURIComponent(state.currentQuality)}`);
   const title = `第 ${ep.number} 集 - ${series ? series.title : ''}`;
   const isNew = !art;
   const player = getOrInitArtPlayer(streamUrl, title);
