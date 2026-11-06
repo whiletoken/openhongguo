@@ -3,10 +3,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 :: 确定项目根目录
-set "SCRIPT_DIR=%~dp0"
-pushd "%SCRIPT_DIR%..\..\"
-set "ROOT_DIR=%CD%\"
-popd
+for %%I in ("%~dp0..\..") do set "ROOT_DIR=%%~fI"
 cd /d "%ROOT_DIR%"
 
 title 红果短剧 - Docker 打包启动脚本

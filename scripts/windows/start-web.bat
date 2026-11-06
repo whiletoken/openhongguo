@@ -3,12 +3,9 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 :: 确定项目根目录与产物路径
-set "SCRIPT_DIR=%~dp0"
-pushd "%SCRIPT_DIR%..\..\"
-set "ROOT_DIR=%CD%\"
-popd
+for %%I in ("%~dp0..\..") do set "ROOT_DIR=%%~fI"
 
-set "BIN_DIR=%ROOT_DIR%bin"
+set "BIN_DIR=%ROOT_DIR%\bin"
 set "TARGET_EXE=%BIN_DIR%\ohg-server.exe"
 
 title 红果短剧 - Web 服务与浏览器播放器
@@ -33,4 +30,6 @@ if not exist "%TARGET_EXE%" (
 
 cd /d "%ROOT_DIR%"
 "%TARGET_EXE%" -open=true %*
-pause
+if !errorlevel! neq 0 (
+    pause
+)
