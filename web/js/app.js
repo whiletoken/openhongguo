@@ -133,17 +133,23 @@ function setupEventListeners() {
     el.navChannels.querySelectorAll('.nav-tab').forEach((t) => t.classList.remove('active'));
     tab.classList.add('active');
 
+    // Auto-close sidebar on mobile
+    if (window.innerWidth <= 768) {
+      document.getElementById('app')?.classList.remove('sidebar-mobile-open');
+    }
+
     state.channel = tab.dataset.channel;
     state.searchQuery = '';
     el.searchInput.value = '';
     el.searchClear.style.display = 'none';
     el.catalogFilters.style.display = 'none';
-    el.channelTitle.textContent = `${tab.textContent}短剧`;
+    const tabLabel = tab.querySelector('span')?.textContent?.trim() || tab.dataset.channel;
+    el.channelTitle.textContent = `${tabLabel}短剧`;
     if (state.channel === '收藏') {
       el.channelTitle.textContent = '⭐ 我的收藏';
       el.channelSubtitle.textContent = `共收藏了 ${(state.favorites || []).length} 部精彩短剧`;
     } else {
-        el.channelSubtitle.textContent = `实时更新「${tab.textContent}」分类`;
+        el.channelSubtitle.textContent = `实时更新「${tabLabel}」分类`;
     }
 
     switchToCatalog();
@@ -156,6 +162,9 @@ function setupEventListeners() {
     el.searchInput.value = '';
     el.searchClear.style.display = 'none';
     el.catalogFilters.style.display = 'none';
+    if (window.innerWidth <= 768) {
+      document.getElementById('app')?.classList.remove('sidebar-mobile-open');
+    }
     const firstTab = el.navChannels.querySelector('.nav-tab');
     if (firstTab) firstTab.click();
   };
@@ -253,6 +262,27 @@ function setupEventListeners() {
   if (el.btnTheaterMode) {
     el.btnTheaterMode.onclick = () => {
       toggleTheaterWide();
+    };
+  }
+
+  // Sidebar Collapse / Mobile Toggle
+  const btnSidebarToggle = document.getElementById('btn-sidebar-toggle');
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  const app = document.getElementById('app');
+
+  if (btnSidebarToggle && app) {
+    btnSidebarToggle.onclick = () => {
+      if (window.innerWidth <= 768) {
+        app.classList.toggle('sidebar-mobile-open');
+      } else {
+        app.classList.toggle('sidebar-collapsed');
+      }
+    };
+  }
+
+  if (sidebarBackdrop && app) {
+    sidebarBackdrop.onclick = () => {
+      app.classList.remove('sidebar-mobile-open');
     };
   }
 
@@ -432,6 +462,20 @@ function setupEventListeners() {
 
 // === Application Boot ===
 async function boot() {
+  // Forward window.scrollTo to .app-main container
+  const origScrollTo = window.scrollTo.bind(window);
+  window.scrollTo = function(options) {
+    const main = document.querySelector('.app-main');
+    if (main) {
+      if (typeof options === 'object') {
+        main.scrollTo(options);
+      } else {
+        main.scrollTo(...arguments);
+      }
+    }
+    origScrollTo(...arguments);
+  };
+
   loadSearchHistory();
   setupEventListeners();
   initPlayerPreferences();
