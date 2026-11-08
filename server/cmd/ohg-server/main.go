@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"context"
@@ -20,6 +20,7 @@ import (
 	"github.com/beilunyang/openhongguo/server/adapters/filestore"
 	"github.com/beilunyang/openhongguo/server/internal/favorite"
 	"github.com/beilunyang/openhongguo/server/internal/history"
+	"github.com/beilunyang/openhongguo/server/internal/logger"
 	"github.com/beilunyang/openhongguo/server/internal/webserver"
 	"github.com/beilunyang/openhongguo/server/sdk"
 	"github.com/beilunyang/openhongguo/web"
@@ -46,6 +47,8 @@ func main() {
 	configDir := flag.String("config-dir", envOr("OHG_CONFIG_DIR", ""), "Configuration and anonymous profile directory")
 	cacheDir := flag.String("cache-dir", envOr("OHG_CACHE_DIR", ""), "Media stream decryption and cache directory")
 	webDir := flag.String("web-dir", envOr("OHG_WEB_DIR", ""), "Optional external directory to serve web assets from")
+	logLevel := flag.String("log-level", envOr("OHG_LOG_LEVEL", "info"), "Log level (debug, info, warn, error)")
+	logDir := flag.String("log-dir", envOr("OHG_LOG_DIR", ""), "Log output directory (default: <config-dir>/logs)")
 	flag.Parse()
 
 	// Locate data directory
@@ -59,11 +62,36 @@ func main() {
 	}
 	_ = os.MkdirAll(dir, 0700)
 
+	// Initialize Logger
+	logPath := *logDir
+	if logPath == "" {
+		logPath = filepath.Join(dir, "logs")
+	}
+	_, err := logger.Init(logger.Config{
+		Level:         *logLevel,
+		LogDir:        logPath,
+		Filename:      "ohg-server.log",
+		EnableConsole: true,
+		EnableFile:    true,
+		MaxSize:       20,
+		MaxBackups:    5,
+		MaxAge:        14,
+		Compress:      true,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "初始化日志系统警告: %v\n", err)
+	}
+	defer func() {
+		_ = logger.Sync()
+	}()
+
+	logger.Infof("正在启动 OpenHongguo 服务端, 数据目录: %s, 日志目录: %s, 日志级别: %s", dir, logPath, *logLevel)
+
 	// PID file management: validate PID, remove stale PID or terminate old instance
 	pidPath := filepath.Join(dir, "ohg-server.pid")
 	pidMgr, err := webserver.AcquirePIDFile(pidPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "警告: PID 互斥管理异常: %v\n", err)
+		logger.Warnf("PID 互斥管理异常: %v", err)
 	} else {
 		defer pidMgr.Release()
 	}
@@ -79,7 +107,7 @@ func main() {
 		RetryAttempts:      3,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "初始化 SDK 客户端失败: %v\n", err)
+		logger.Errorf("初始化 SDK 客户端失败: %v", err)
 		os.Exit(1)
 	}
 
@@ -94,14 +122,14 @@ func main() {
 
 	// Create Web Server
 	srv, err := webserver.NewServer(webserver.Config{
-		Client:       client,
+		Client:        client,
 		HistoryStore:  histStore,
 		FavoriteStore: favStore,
-		CacheDir:     *cacheDir,
-		StaticFS:     staticFS,
+		CacheDir:      *cacheDir,
+		StaticFS:      staticFS,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "初始化服务端失败: %v\n", err)
+		logger.Errorf("初始化服务端失败: %v", err)
 		os.Exit(1)
 	}
 
@@ -118,7 +146,7 @@ func main() {
 	listenAddr := fmt.Sprintf("%s:%d", listenHost, listenPort)
 	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "端口监听失败 (%s): %v\n", listenAddr, err)
+		logger.Errorf("端口监听失败 (%s): %v", listenAddr, err)
 		os.Exit(1)
 	}
 
@@ -132,17 +160,18 @@ func main() {
 		Handler: srv.Handler(),
 	}
 
-	go func() {
+	logger.SafeGoNamed("http_server", func() {
 		if err := httpServer.Serve(listener); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "服务端运行错误: %v\n", err)
+			logger.Errorf("服务端运行错误: %v", err)
 		}
-	}()
+	})
 
 	fmt.Println("==================================================")
 	fmt.Println("  红果短剧 OpenHongguo - 后台 API & Web 服务端")
 	fmt.Println("==================================================")
 	fmt.Printf(" 服务监听: %s\n", listenAddr)
 	fmt.Printf(" 访问地址: %s\n", url)
+	fmt.Printf(" 日志文件: %s\n", filepath.Join(logPath, "ohg-server.log"))
 	if *addr == "0.0.0.0" {
 		fmt.Println(" 局域网访问: 手机/平板/TV 浏览器打开本机局域网 IP:5210 即可观看")
 	}
@@ -150,21 +179,23 @@ func main() {
 	fmt.Println("--------------------------------------------------")
 
 	if *open {
-		go openBrowser(url)
+		logger.SafeGoNamed("open_browser", func() {
+			openBrowser(url)
+		})
 	}
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
 
-	fmt.Println("\n正在关闭服务端...")
+	logger.Info("接收到停止信号，正在关闭服务端...")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_ = httpServer.Shutdown(ctx)
 	if pidMgr != nil {
 		pidMgr.Release()
 	}
-	fmt.Println("服务端已安全停止。")
+	logger.Info("服务端已安全停止。")
 }
 
 func openBrowser(url string) {

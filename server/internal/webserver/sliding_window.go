@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/beilunyang/openhongguo/server/internal/logger"
 
 	"github.com/beilunyang/openhongguo/server/sdk"
 )
@@ -160,7 +162,9 @@ func (sm *StreamManager) ActivateWindow(ctx context.Context, req WindowPlayReque
 		prefetchCtx, cancel := context.WithCancel(context.Background())
 		sm.window.cancelPrefetch = cancel
 		sm.window.isPrefetching = true
-		go sm.runPrefetchQueue(prefetchCtx, queue, req.Quality, keepMap, gen)
+		logger.SafeGoNamed("sliding_window_prefetch", func() {
+			sm.runPrefetchQueue(prefetchCtx, queue, req.Quality, keepMap, gen)
+		})
 	} else {
 		sm.window.isPrefetching = false
 	}

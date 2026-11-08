@@ -67,7 +67,20 @@ go build -ldflags="-s -w" -o ../bin/ohg.exe ./cmd/ohg
 
 # 自定义端口与绑定地址
 .\bin\ohg-server.exe -addr 0.0.0.0 -port 5210
+
+# 配置日志级别与日志保存目录 (支持 debug / info / warn / error)
+.\bin\ohg-server.exe -log-level debug -log-dir ./logs
 ```
+
+## 日志输出与异常容灾
+
+服务端引入了业界成熟的开源库组合进行工程化改造，保障高并发与长时运行的稳定性：
+1. **高性能结构化日志 (Uber Zap + Lumberjack)**:
+   - 控制台彩色分级输出与滚动日志文件归档（按大小自动切割、压缩备份）。
+   - 全局 HTTP Access Log 中间件，自动记录客户端 IP、请求方法、URI、状态码、响应耗时（ms）与链路 `X-Request-ID`。
+2. **全局异常恢复与安全容灾 (Panic Recovery & SafeGo)**:
+   - 全局 HTTP 中间件拦截 Handler Panic，记录完整堆栈跟踪，并向前端返回结构化 JSON 500 错误响应，避免连接悬挂或服务崩溃。
+   - `SafeGo` / `SafeGoNamed` 机制全面保护流媒体下载、预缓存及播放器调用等后台 Goroutine，确保单任务异常不会导致主进程退出。
 
 ## RESTful API 概览
 

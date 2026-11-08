@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/beilunyang/openhongguo/server/internal/logger"
 	"github.com/beilunyang/openhongguo/server/sdk"
 )
 
@@ -213,11 +214,13 @@ func (sm *StreamManager) ServeStream(w http.ResponseWriter, r *http.Request, epi
 
 // Prefetch triggers background caching of the given episode.
 func (sm *StreamManager) Prefetch(episodeID, quality string) {
-	go func() {
+	logger.SafeGoNamed("stream_prefetch", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		_, _ = sm.EnsureCached(ctx, episodeID, quality)
-	}()
+		if _, err := sm.EnsureCached(ctx, episodeID, quality); err != nil {
+			logger.Warnf("预缓存剧集 %s (%s) 失败: %v", episodeID, quality, err)
+		}
+	})
 }
 
 // CacheStats returns cache metrics.

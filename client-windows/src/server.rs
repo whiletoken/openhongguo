@@ -55,6 +55,7 @@ impl ClientServer {
                 }
 
                 let url_path = request.url().split('?').next().unwrap_or("/").to_string();
+                log::debug!("桌面客户端收到请求: {} {}", request.method(), request.url());
 
                 // 1. Client Status API
                 if url_path == "/api/client/status" {
@@ -139,8 +140,10 @@ impl ClientServer {
                                 continue;
                             }
 
+                            log::info!("正在尝试调用外部播放器: {} 播放流媒体: {}", p.player, stream_url);
                             match launch_external_player(&p.player, &stream_url, &p.title, p.start_seconds) {
                                 Ok(used_player) => {
+                                    log::info!("已成功启动播放器: {}", used_player);
                                     let success_json = serde_json::to_vec(&serde_json::json!({
                                         "ok": true,
                                         "player": used_player,
@@ -152,6 +155,7 @@ impl ClientServer {
                                     let _ = request.respond(resp);
                                 }
                                 Err(err_msg) => {
+                                    log::warn!("启动外部播放器失败: {}", err_msg);
                                     let err_json = serde_json::to_vec(&serde_json::json!({
                                         "ok": false,
                                         "error": err_msg

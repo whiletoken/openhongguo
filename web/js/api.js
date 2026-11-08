@@ -1,5 +1,7 @@
 // OpenHongguo Web - HTTP API Client & Dynamic Server Connection Resolver
 
+import { Logger } from './logger.js';
+
 export function normalizeServerUrl(raw) {
   let url = (raw || '').trim();
   if (!url) return '';
@@ -117,8 +119,10 @@ export async function apiGet(endpoint, options = {}) {
     let msg = text;
     try {
       const j = JSON.parse(text);
-      if (j.error) msg = j.error;
+      if (j.message) msg = j.message;
+      else if (j.error) msg = j.error;
     } catch (e) {}
+    Logger.warn('API', `GET ${endpoint} 失败 [${res.status}]: ${msg}`);
     throw new Error(msg);
   }
   return res.json();
@@ -137,8 +141,10 @@ export async function apiPost(endpoint, body, options = {}) {
     let msg = text;
     try {
       const j = JSON.parse(text);
-      if (j.error) msg = j.error;
+      if (j.message) msg = j.message;
+      else if (j.error) msg = j.error;
     } catch (e) {}
+    Logger.warn('API', `POST ${endpoint} 失败 [${res.status}]: ${msg}`);
     throw new Error(msg);
   }
   return res.json();
@@ -152,8 +158,10 @@ export async function apiDelete(endpoint, options = {}) {
     let msg = text;
     try {
       const j = JSON.parse(text);
-      if (j.error) msg = j.error;
+      if (j.message) msg = j.message;
+      else if (j.error) msg = j.error;
     } catch (e) {}
+    Logger.warn('API', `DELETE ${endpoint} 失败 [${res.status}]: ${msg}`);
     throw new Error(msg);
   }
   return res.json();

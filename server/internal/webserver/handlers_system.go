@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/beilunyang/openhongguo/server/internal/history"
+	"github.com/beilunyang/openhongguo/server/internal/logger"
 	"github.com/beilunyang/openhongguo/server/internal/media"
 	"github.com/beilunyang/openhongguo/server/sdk"
 )
@@ -89,7 +90,7 @@ func (s *Server) handlePlayExternal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Launch player in background goroutine
-	go func() {
+	logger.SafeGoNamed("player_launcher", func() {
 		ctx := context.Background()
 		_, _ = s.mediaLaunch.Play(ctx, media.Request{
 			URL:          stream.URL,
@@ -98,7 +99,7 @@ func (s *Server) handlePlayExternal(w http.ResponseWriter, r *http.Request) {
 			Player:       player,
 			StartSeconds: req.StartSeconds,
 		})
-	}()
+	})
 
 	jsonResponse(w, http.StatusOK, map[string]any{
 		"success": true,

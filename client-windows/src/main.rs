@@ -1,6 +1,8 @@
 mod assets;
 mod client;
 mod config;
+mod logger;
+mod panic;
 mod player;
 mod server;
 mod window;
@@ -13,6 +15,10 @@ use std::sync::Arc;
 
 fn main() {
     let cfg = AppConfig::parse();
+
+    // 1. 初始化日志输出与全局异常捕获体系
+    logger::init(&cfg.config_dir);
+    panic::setup_panic_hook(&cfg.config_dir);
 
     match cfg.command {
         SubCommand::Help => {

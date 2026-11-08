@@ -65,3 +65,13 @@ cargo build --release
 # 检查服务端连通性状态
 .\bin\ohg-desktop.exe status
 ```
+
+## 日志输出与异常容灾
+
+Windows 客户端引入了业界标准的 Rust 开源日志框架与全局 Panic 异常监控机制：
+1. **结构化分级日志 (`log` + `env_logger`)**:
+   - 自动在控制台与本地日志文件 (`%APPDATA%\openhongguo\logs\ohg-desktop.log`) 中双路持久化输出。
+   - 支持通过 `RUST_LOG=debug` 环境变量动态开启更详尽的请求链路追踪日志。
+2. **全局未捕获异常监听 (Panic Hook)**:
+   - 全局拦截线程 Panic，自动提取异常原因、代码行号与调用位置，输出至控制台并归档到 `crash.log` 崩溃文件。
+   - 在 GUI 模式下遇到致命崩溃时调用 Windows 原生 `MessageBoxW` 对话框，给予用户友好的故障排查指引。

@@ -53,6 +53,10 @@ import {
   closeSettingsModal,
   setReloadAppHandler,
 } from './settings.js';
+import { Logger } from './logger.js';
+
+// 初始化全局异常捕获与前端日志记录器
+Logger.initGlobalErrorHandler();
 
 // === Connect Cross-Module Handlers ===
 setCatalogOpenSeriesHandler(openSeries);
@@ -79,6 +83,7 @@ async function reloadApp() {
     state.history = hData || [];
   } catch (e) {}
   loadCatalogPage(1, true);
+  Logger.info('Reload', '应用重新加载完成');
 }
 
 // === Search Coordination ===
@@ -239,6 +244,7 @@ async function boot() {
   } catch (e) {}
 
   loadCatalogPage(1, true);
+  Logger.info('Boot', 'OpenHongguo Web 前端客户端已就绪');
 }
 
 boot();

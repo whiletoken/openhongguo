@@ -27,6 +27,7 @@ impl AssetManager {
         embedded.insert("js/episodes.js", include_bytes!("../../web/js/episodes.js").as_slice());
         embedded.insert("js/favorites.js", include_bytes!("../../web/js/favorites.js").as_slice());
         embedded.insert("js/history.js", include_bytes!("../../web/js/history.js").as_slice());
+        embedded.insert("js/logger.js", include_bytes!("../../web/js/logger.js").as_slice());
         embedded.insert("js/navigation.js", include_bytes!("../../web/js/navigation.js").as_slice());
         embedded.insert("js/player.js", include_bytes!("../../web/js/player.js").as_slice());
         embedded.insert("js/search_history.js", include_bytes!("../../web/js/search_history.js").as_slice());

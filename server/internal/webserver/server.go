@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"io/fs"
@@ -117,7 +117,11 @@ func (s *Server) Handler() http.Handler {
 		})
 	}
 
-	return corsMiddleware(mux)
+	var handler http.Handler = mux
+	handler = corsMiddleware(handler)
+	handler = RecoveryMiddleware(handler)
+	handler = LoggingMiddleware(handler)
+	return handler
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
