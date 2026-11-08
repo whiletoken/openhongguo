@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
@@ -16,10 +16,10 @@ echo ========================================================
 
 if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 
-:: 1. 检查并编译桌面客户端 (Rust 模块)
+:: 1. 检查并编译桌面客户端 (client-windows 模块)
 if not exist "%DESKTOP_EXE%" (
     echo 正在首次编译 Rust 桌面客户端 ohg-desktop.exe 至 bin/ 目录...
-    cd /d "%ROOT_DIR%\desktop"
+    cd /d "%ROOT_DIR%\client-windows"
     cargo build --release
     if !errorlevel! neq 0 (
         echo.
@@ -27,7 +27,7 @@ if not exist "%DESKTOP_EXE%" (
         pause
         exit /b 1
     )
-    copy /y "%ROOT_DIR%\desktop\target\release\ohg-desktop.exe" "%DESKTOP_EXE%" >nul
+    copy /y "%ROOT_DIR%\client-windows\target\release\ohg-desktop.exe" "%DESKTOP_EXE%" >nul
 )
 
 :: 2. 检查是否传入了自定义远程服务端参数
@@ -42,7 +42,7 @@ if !HAS_CUSTOM_SERVER! equ 0 (
         if not exist "%SERVER_EXE%" (
             echo 正在首次编译后台服务 ohg-server.exe 至 bin/ 目录...
             cd /d "%ROOT_DIR%"
-            go build -ldflags="-s -w" -o "%SERVER_EXE%" ./cmd/ohg-server
+            go build -ldflags="-s -w" -o "%SERVER_EXE%" ./server/cmd/ohg-server
             if !errorlevel! neq 0 (
                 echo [警告] 后台服务端编译失败，桌面端可能无法请求到本地数据。
             )

@@ -22,7 +22,7 @@ let package = Package(
         .target(
             name: "Openhongguo",
             dependencies: ["OpenhongguoCore"],
-            path: "bindings/mobile/ios/Sources/Openhongguo"
+            path: "server/bindings/mobile/ios/Sources/Openhongguo"
         ),
     ]
 )

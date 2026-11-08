@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>dev.openhongguo</groupId>
+        <artifactId>openhongguo-parent</artifactId>
+        <version>0.2.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>openhongguo-web</artifactId>
+    <packaging>pom</packaging>
+
+    <name>OpenHongguo :: Web Client</name>
+    <description>OpenHongguo Web 前端模块 (HTML5/CSS3/ES6 响应式界面与 ArtPlayer 集成)</description>
+
+</project>

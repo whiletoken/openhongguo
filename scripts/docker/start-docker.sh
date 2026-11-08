@@ -38,13 +38,13 @@ mkdir -p data cache
 echo "[1/2] 正在使用 BuildKit 极速构建 Docker 镜像并启动容器..."
 if docker compose version >/dev/null 2>&1; then
     echo "检测到 Docker Compose v2，执行编排构建与启动..."
-    docker compose up -d --build
+    docker compose -f "$ROOT_DIR/docker/docker-compose.yml" up -d --build
 elif command -v docker-compose >/dev/null 2>&1; then
     echo "检测到 Docker Compose v1，执行编排构建与启动..."
-    docker-compose up -d --build
+    docker-compose -f "$ROOT_DIR/docker/docker-compose.yml" up -d --build
 else
     echo "未检测到 compose，使用原生 docker 命令构建与运行..."
-    docker build -t openhongguo:latest .
+    docker build -f "$ROOT_DIR/docker/Dockerfile" -t openhongguo:latest .
     docker stop openhongguo >/dev/null 2>&1 || true
     docker rm openhongguo >/dev/null 2>&1 || true
     docker run -d \

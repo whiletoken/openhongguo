@@ -1,0 +1,17 @@
+{
+  "name": "@openhongguo/web",
+  "version": "0.2.0",
+  "description": "OpenHongguo Web Frontend Client",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "keywords": [
+    "openhongguo",
+    "short-drama",
+    "web",
+    "player"
+  ],
+  "author": "OpenHongguo Contributors",
+  "license": "Apache-2.0"
+}

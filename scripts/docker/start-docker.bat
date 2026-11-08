@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
@@ -36,7 +36,7 @@ echo.
 docker compose version >nul 2>&1
 if %errorlevel% equ 0 (
     echo 检测到 Docker Compose v2，执行编排构建与启动...
-    docker compose up -d --build
+    docker compose -f "%ROOT_DIR%\docker\docker-compose.yml" up -d --build
     if !errorlevel! equ 0 goto :success
     goto :fail
 )
@@ -45,14 +45,14 @@ if %errorlevel% equ 0 (
 docker-compose version >nul 2>&1
 if %errorlevel% equ 0 (
     echo 检测到 Docker Compose v1，执行编排构建与启动...
-    docker-compose up -d --build
+    docker-compose -f "%ROOT_DIR%\docker\docker-compose.yml" up -d --build
     if !errorlevel! equ 0 goto :success
     goto :fail
 )
 
 :: 6. 若无 compose，降级使用原生 docker 命令
 echo 未检测到 compose，使用原生 docker 命令构建与运行...
-docker build -t openhongguo:latest .
+docker build -f "%ROOT_DIR%\docker\Dockerfile" -t openhongguo:latest .
 if !errorlevel! neq 0 goto :build_fail
 
 echo 正在停止并移除旧容器(若存在)...
@@ -60,20 +60,20 @@ docker stop openhongguo >nul 2>&1
 docker rm openhongguo >nul 2>&1
 
 echo 正在启动新容器...
-docker run -d --name openhongguo -p 5210:5210 -v "%ROOT_DIR%data:/data" -v "%ROOT_DIR%cache:/cache" --restart unless-stopped openhongguo:latest
+docker run -d --name openhongguo -p 5210:5210 -v "%ROOT_DIR%\data:/data" -v "%ROOT_DIR%\cache:/cache" --restart unless-stopped openhongguo:latest
 if !errorlevel! equ 0 goto :success
 goto :fail
 
 :no_docker
-echo [错误] 未检测到 Docker 运行环境！
-echo 请先安装 Docker 或 Docker Desktop，并确保将 docker 添加至系统 PATH。
+echo [错误] 未检测到 Docker 运行环境。
+echo 请先安装 Docker 或 Docker Desktop 并将 docker 添加至系统 PATH。
 echo 官方下载地址: https://www.docker.com/products/docker-desktop/
 echo.
 pause
 exit /b 1
 
 :no_daemon
-echo [错误] Docker 守护进程未启动！
+echo [错误] Docker 守护进程未启动。
 echo 请先打开并启动 Docker Desktop 或 Docker 服务后重试。
 echo.
 pause
@@ -101,7 +101,7 @@ echo ========================================================
 echo.
 echo   - Web 访问地址: http://localhost:5210
 echo   - 查看实时日志: docker logs -f openhongguo
-echo   - 停止容器服务: docker stop openhongguo (或 docker compose down)
+echo   - 停止容器服务: docker compose -f "%ROOT_DIR%\docker\docker-compose.yml" down
 echo.
 echo 正在尝试为您打开浏览器访问...
 start http://localhost:5210

@@ -23,4 +23,5 @@ docs/rea/
 *.pid
 /ohg-server
 /ohg-desktop
-desktop/target/
+client-windows/target/
+target/

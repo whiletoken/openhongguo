@@ -38,7 +38,7 @@ jobs:
             exe=ohg
             if [ "$os" = windows ]; then exe=ohg.exe; fi
             mkdir -p "build/$name"
-            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "-s -w" -o "build/$name/$exe" ./cmd/ohg
+            CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath -ldflags "-s -w" -o "build/$name/$exe" ./server/cmd/ohg
             cp LICENSE "build/$name/"
             if [ "$os" = windows ]; then
               (cd build && zip -qr "../dist/$name.zip" "$name")
