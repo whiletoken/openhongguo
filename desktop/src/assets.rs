@@ -13,16 +13,27 @@ impl AssetManager {
         // Embed static assets into binary for standalone portability
         embedded.insert("index.html", include_bytes!("../../web/index.html").as_slice());
         embedded.insert("css/app.css", include_bytes!("../../web/css/app.css").as_slice());
+        embedded.insert("css/base.css", include_bytes!("../../web/css/base.css").as_slice());
+        embedded.insert("css/catalog.css", include_bytes!("../../web/css/catalog.css").as_slice());
+        embedded.insert("css/components.css", include_bytes!("../../web/css/components.css").as_slice());
+        embedded.insert("css/layout.css", include_bytes!("../../web/css/layout.css").as_slice());
+        embedded.insert("css/responsive.css", include_bytes!("../../web/css/responsive.css").as_slice());
+        embedded.insert("css/theater.css", include_bytes!("../../web/css/theater.css").as_slice());
         embedded.insert("js/api.js", include_bytes!("../../web/js/api.js").as_slice());
         embedded.insert("js/app.js", include_bytes!("../../web/js/app.js").as_slice());
         embedded.insert("js/artplayer.js", include_bytes!("../../web/js/artplayer.js").as_slice());
+        embedded.insert("js/cache_sync.js", include_bytes!("../../web/js/cache_sync.js").as_slice());
         embedded.insert("js/catalog.js", include_bytes!("../../web/js/catalog.js").as_slice());
+        embedded.insert("js/episodes.js", include_bytes!("../../web/js/episodes.js").as_slice());
         embedded.insert("js/favorites.js", include_bytes!("../../web/js/favorites.js").as_slice());
         embedded.insert("js/history.js", include_bytes!("../../web/js/history.js").as_slice());
+        embedded.insert("js/navigation.js", include_bytes!("../../web/js/navigation.js").as_slice());
         embedded.insert("js/player.js", include_bytes!("../../web/js/player.js").as_slice());
         embedded.insert("js/search_history.js", include_bytes!("../../web/js/search_history.js").as_slice());
         embedded.insert("js/settings.js", include_bytes!("../../web/js/settings.js").as_slice());
+        embedded.insert("js/shortcuts.js", include_bytes!("../../web/js/shortcuts.js").as_slice());
         embedded.insert("js/state.js", include_bytes!("../../web/js/state.js").as_slice());
+        embedded.insert("js/theater_layout.js", include_bytes!("../../web/js/theater_layout.js").as_slice());
         embedded.insert("js/utils.js", include_bytes!("../../web/js/utils.js").as_slice());
 
         // Probe disk for live web/ directory (for development overrides)

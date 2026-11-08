@@ -1,0 +1,183 @@
+/* === OpenHongguo Web - Responsive & Fluid Screen Layout Subsystem === */
+
+@media (max-width: 1200px) {
+  .theater-container {
+    grid-template-columns: 1fr 340px;
+    gap: 18px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .theater-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .theater-container.episodes-hidden {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+
+  .theater-container.episodes-hidden .theater-right {
+    display: none !important;
+  }
+
+  .series-panel {
+    max-height: none;
+  }
+
+  .video-container {
+    max-height: min(72vh, 680px);
+  }
+}
+
+@media (max-width: 900px) {
+  .header-search {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100%;
+    z-index: 120;
+    transform: translateX(-100%);
+    margin-left: 0 !important;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+  }
+
+  #app.sidebar-mobile-open .app-sidebar {
+    transform: translateX(0);
+  }
+
+  #app.sidebar-mobile-open .sidebar-backdrop {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .app-topbar {
+    padding: 0 14px;
+    height: 56px;
+    min-height: 56px;
+    gap: 12px;
+  }
+
+  .header-search {
+    max-width: none;
+    flex: 1;
+  }
+
+  .search-input-wrapper input {
+    font-size: 12px;
+    padding: 6px 8px 6px 30px;
+  }
+
+  .search-icon {
+    left: 8px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .search-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .app-main {
+    padding: 14px 14px 48px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .history-drawer,
+  .favorites-drawer {
+    width: 100% !important;
+    right: -100% !important;
+  }
+
+  .player-extra-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .extra-controls-left,
+  .extra-controls-right {
+    gap: 6px;
+  }
+
+  .btn-ctrl {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .select-dropdown {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  .ep-btn {
+    height: 36px;
+    font-size: 12.5px;
+  }
+
+  .modal-dialog {
+    width: 95% !important;
+    max-height: 92vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-topbar {
+    height: 52px;
+    min-height: 52px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .sidebar-toggle-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .header-search {
+    max-width: none;
+  }
+
+  .search-btn {
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .player-back-bar {
+    padding: 8px 12px;
+  }
+
+  .now-playing-title {
+    font-size: 13px;
+    max-width: 50%;
+  }
+
+  .player-extra-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .extra-controls-left,
+  .extra-controls-right {
+    justify-content: space-between;
+    width: 100%;
+  }
+}

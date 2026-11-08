@@ -1,10 +1,19 @@
-// OpenHongguo Web - Video Player & Theater Mode Module
+// OpenHongguo Web - Video Player Engine
 
 import { state, el } from './state.js';
 import { apiGet, apiPost, buildApiUrl } from './api.js';
 import { formatHeat, showToast, escapeHtml } from './utils.js';
 import { saveCurrentHistory } from './history.js';
 import { updateTheaterFavButton } from './favorites.js';
+import {
+  EP_CHUNK_SIZE,
+  renderEpisodePagination,
+  renderEpisodeButtonsForCurrentPage,
+  updateActiveEpisodeButton,
+  setEpisodeSelectHandler,
+} from './episodes.js';
+import { notifyActiveCache } from './cache_sync.js';
+import { switchToTheater, applyAspectRatio, setArtPlayerGetter } from './theater_layout.js';
 
 let art = null;
 
@@ -12,6 +21,17 @@ export function getArtPlayer() {
   return art;
 }
 
+// Connect layout engine with player getter
+setArtPlayerGetter(getArtPlayer);
+
+// Connect episodes module with loadEpisode
+setEpisodeSelectHandler((idx, autoPlay) => {
+  loadEpisode(idx, autoPlay);
+});
+
+/**
+ * Creates or retrieves the singleton Artplayer instance
+ */
 export function getOrInitArtPlayer(streamUrl, title) {
   if (art) return art;
 
@@ -63,7 +83,7 @@ export function getOrInitArtPlayer(streamUrl, title) {
         name: 'next-ep',
         index: 11,
         position: 'left',
-        html: '<button class="art-icon" style="padding:0;background:none;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;" title="下一集"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="5,4 15,12 5,20"></polygon><line x1="19" y1="4" x2="19" y2="20" stroke="currentColor" stroke-width="2.5"></line></svg></button>',
+        html: '<button class="art-icon" style="padding:0;background:none;border:none;cursor:pointer;color:#fff;display:flex;align-items:center;" title="下一集"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="5,4 15,12 5,20"></polygon><line x1="19" y1="19" x2="19" y2="20" stroke="currentColor" stroke-width="2.5"></line></svg></button>',
         tooltip: '下一集',
         click: function () {
           if (state.currentEpIndex < state.episodes.length - 1) {
@@ -138,13 +158,15 @@ export function getOrInitArtPlayer(streamUrl, title) {
   return art;
 }
 
+/**
+ * Fetches series information and starts playback of target episode
+ */
 export async function openSeries(seriesId, targetEpNum = 1) {
   switchToTheater();
   el.videoLoading.style.display = 'flex';
   el.videoLoadingMsg.textContent = '正在获取短剧信息与选集...';
 
   try {
-    // 1. Get Series Detail & Episodes in parallel
     const [series, epPage] = await Promise.all([
       apiGet(`/api/series?id=${encodeURIComponent(seriesId)}`),
       apiGet(`/api/episodes?id=${encodeURIComponent(seriesId)}`),
@@ -185,7 +207,7 @@ export async function openSeries(seriesId, targetEpNum = 1) {
       if (foundIdx !== -1) startEpIndex = foundIdx;
     }
 
-    state.currentChunkIndex = Math.floor(startEpIndex / 30);
+    state.currentChunkIndex = Math.floor(startEpIndex / EP_CHUNK_SIZE);
     renderEpisodePagination();
     renderEpisodeButtonsForCurrentPage();
     loadEpisode(startEpIndex, true, resumeSeconds);
@@ -195,6 +217,9 @@ export async function openSeries(seriesId, targetEpNum = 1) {
   }
 }
 
+/**
+ * Loads and plays a specific episode by its index
+ */
 export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
   if (index < 0 || index >= state.episodes.length) return;
 
@@ -204,7 +229,6 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
 
   el.playerTitle.textContent = `第 ${ep.number} 集 - ${series ? series.title : ''}`;
 
-  // Debounce loading indicator: only show if loading takes > 250ms (avoids black flicker on cached video)
   if (state.loadingTimer) {
     clearTimeout(state.loadingTimer);
     state.loadingTimer = null;
@@ -219,7 +243,7 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
   const isNew = !art;
   const player = getOrInitArtPlayer(streamUrl, title);
 
-  // Trigger sliding window active cache (caches upcoming 10 episodes, keeps <= 12)
+  // Trigger sliding window active cache
   notifyActiveCache(ep);
 
   const applyPlayback = () => {
@@ -254,7 +278,6 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
   el.btnEpNext.disabled = index >= state.episodes.length - 1;
 
   // Auto switch page chunk if needed
-  const EP_CHUNK_SIZE = 30;
   const neededChunk = Math.floor(index / EP_CHUNK_SIZE);
   if (neededChunk !== (state.currentChunkIndex || 0)) {
     state.currentChunkIndex = neededChunk;
@@ -266,340 +289,64 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
   saveCurrentHistory(player, false);
 }
 
-export function toggleEpisodesHidden(force) {
-  const container = el.theaterContainer;
-  if (!container) return;
+/**
+ * Binds video player controls & secondary action buttons
+ */
+export function bindPlayerControls() {
+  // Prev / Next Episode buttons
+  el.btnEpPrev.onclick = () => loadEpisode(state.currentEpIndex - 1, true);
+  el.btnEpNext.onclick = () => loadEpisode(state.currentEpIndex + 1, true);
 
-  const isHidden = typeof force === 'boolean' ? force : !container.classList.contains('episodes-hidden');
-  container.classList.toggle('episodes-hidden', isHidden);
+  // Autoplay toggle
+  el.chkAutoplay.onchange = () => {
+    state.autoplay = el.chkAutoplay.checked;
+    showToast(state.autoplay ? '自动连播已开启' : '自动连播已关闭', 'info');
+  };
 
-  if (el.btnToggleEpisodesTop) {
-    el.btnToggleEpisodesTop.classList.toggle('active', isHidden);
-    el.btnToggleEpisodesTop.title = isHidden ? '展开选集面板' : '收起选集面板';
-  }
+  // Quality selector
+  el.selectQuality.onchange = () => {
+    state.currentQuality = el.selectQuality.value;
+    const curArt = getArtPlayer();
+    const curTime = (curArt && curArt.currentTime) ? curArt.currentTime : 0;
+    showToast(`切换清晰度至 ${state.currentQuality}`, 'info');
+    loadEpisode(state.currentEpIndex, true, curTime);
+  };
 
-  if (el.btnToggleEpisodesBar) {
-    el.btnToggleEpisodesBar.classList.toggle('active', isHidden);
-  }
-
-  const art = getArtPlayer();
-  if (art && typeof art.resize === 'function') {
-    setTimeout(() => art.resize(), 260);
-  }
-}
-
-const EP_CHUNK_SIZE = 30;
-
-export function renderEpisodePagination() {
-  const total = state.episodes.length;
-  if (!el.episodesPaginationModule) return;
-
-  if (total <= EP_CHUNK_SIZE) {
-    el.episodesPaginationModule.style.display = 'none';
-    return;
-  }
-
-  el.episodesPaginationModule.style.display = 'flex';
-  const numChunks = Math.ceil(total / EP_CHUNK_SIZE);
-  const curChunk = state.currentChunkIndex || 0;
-
-  // Stepper navigation buttons
-  if (el.btnEpChunkPrev) {
-    el.btnEpChunkPrev.disabled = curChunk <= 0;
-  }
-  if (el.btnEpChunkNext) {
-    el.btnEpChunkNext.disabled = curChunk >= numChunks - 1;
-  }
-  if (el.epPageIndicator) {
-    const start = curChunk * EP_CHUNK_SIZE + 1;
-    const end = Math.min((curChunk + 1) * EP_CHUNK_SIZE, total);
-    el.epPageIndicator.textContent = `第 ${curChunk + 1}/${numChunks} 组 (${start}-${end}集)`;
-  }
-
-  // Generous, prominent range tabs
-  el.epRangeTabs.innerHTML = '';
-  for (let i = 0; i < numChunks; i++) {
-    const start = i * EP_CHUNK_SIZE + 1;
-    const end = Math.min((i + 1) * EP_CHUNK_SIZE, total);
-    const tab = document.createElement('button');
-    tab.className = `ep-range-tab ${i === curChunk ? 'active' : ''}`;
-    tab.textContent = `${start} - ${end} 集`;
-    tab.onclick = () => {
-      switchEpisodeChunk(i);
+  // Shortcuts tip button
+  if (el.btnShortcutsTip) {
+    el.btnShortcutsTip.onclick = () => {
+      showToast('快捷键: 空格/K 播放/暂停 | 左右方向键 快退/快进5秒 | 上下键 调音量 | [ ] 上下集 | F 全屏', 'info', 4000);
     };
-    el.epRangeTabs.appendChild(tab);
   }
-}
 
-export function switchEpisodeChunk(chunkIdx) {
-  const numChunks = Math.ceil(state.episodes.length / EP_CHUNK_SIZE);
-  if (chunkIdx < 0 || chunkIdx >= numChunks) return;
-  state.currentChunkIndex = chunkIdx;
-  renderEpisodePagination();
-  renderEpisodeButtonsForCurrentPage();
-  updateActiveEpisodeButton();
-}
+  // Download episode
+  el.btnDownloadEp.onclick = () => {
+    const ep = state.episodes[state.currentEpIndex];
+    const series = state.currentSeries;
+    if (!ep) return;
+    const fileName = `${series ? series.title : '短剧'}_第${ep.number}集.mp4`;
+    const url = buildApiUrl(`/api/download?episode_id=${encodeURIComponent(ep.id)}&quality=${encodeURIComponent(state.currentQuality)}&filename=${encodeURIComponent(fileName)}`);
+    showToast('正在开始下载本集...', 'success');
+    window.open(url, '_blank');
+  };
 
-export function renderEpisodeButtonsForCurrentPage() {
-  el.episodesGrid.innerHTML = '';
-  const total = state.episodes.length;
-  const curChunk = state.currentChunkIndex || 0;
-  const start = curChunk * EP_CHUNK_SIZE;
-  const end = Math.min(start + EP_CHUNK_SIZE, total);
-
-  for (let realIndex = start; realIndex < end; realIndex++) {
-    const ep = state.episodes[realIndex];
-    if (!ep) continue;
-    const btn = document.createElement('button');
-    const isCached = state.cachedEpIDs && state.cachedEpIDs.has(ep.id);
-    btn.className = `ep-btn ${realIndex === state.currentEpIndex ? 'active' : ''} ${isCached ? 'cached' : ''}`;
-    btn.textContent = ep.number || (realIndex + 1);
-    btn.dataset.index = realIndex;
-    btn.dataset.epNum = ep.number || (realIndex + 1);
-    const cachedTip = isCached ? ' (已本地缓存 秒播)' : '';
-    btn.title = `第 ${ep.number} 集${ep.title ? ' - ' + ep.title : ''}${cachedTip}`;
-    btn.onclick = () => {
-      btn.blur();
-      loadEpisode(realIndex, true);
-    };
-    el.episodesGrid.appendChild(btn);
-  }
-}
-
-export function updateActiveEpisodeButton() {
-  let activeBtn = null;
-  el.episodesGrid.querySelectorAll('.ep-btn').forEach((btn) => {
-    const idx = parseInt(btn.dataset.index, 10);
-    const isActive = idx === state.currentEpIndex;
-    btn.classList.toggle('active', isActive);
-    if (isActive) activeBtn = btn;
-    const ep = state.episodes[idx];
-    if (ep && state.cachedEpIDs && state.cachedEpIDs.has(ep.id)) {
-      btn.classList.add('cached');
+  // External player
+  el.btnPlayExternal.onclick = async () => {
+    const ep = state.episodes[state.currentEpIndex];
+    if (!ep) return;
+    const curArt = getArtPlayer();
+    const startSec = Math.floor((curArt && curArt.currentTime) ? curArt.currentTime : 0);
+    try {
+      if (curArt) curArt.pause();
+      showToast('正在调用本地独立播放器...', 'info');
+      const res = await apiPost('/api/play_external', {
+        episode_id: ep.id,
+        quality: state.currentQuality,
+        start_seconds: startSec,
+      });
+      showToast(`已使用 ${res.player || '系统播放器'} 打开！`, 'success');
+    } catch (err) {
+      showToast('外部播放器启动失败: ' + err.message, 'error');
     }
-  });
-
-  if (activeBtn) {
-    activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
-
-  // Update active range tab highlight
-  if (state.episodes.length > EP_CHUNK_SIZE) {
-    const curChunk = state.currentChunkIndex || 0;
-    const tabs = el.epRangeTabs.querySelectorAll('.ep-range-tab');
-    tabs.forEach((t, i) => t.classList.toggle('active', i === curChunk));
-  }
-}
-
-export async function notifyActiveCache(ep) {
-  if (!state.currentSeries) return;
-  try {
-    const payload = {
-      series_id: state.currentSeries.id,
-      episode_id: ep.id,
-      quality: state.currentQuality,
-      episodes: state.episodes.map((e) => ({ id: e.id, number: e.number, title: e.title })),
-    };
-    const res = await apiPost('/api/cache/active', payload);
-    updateCacheWindowUI(res);
-    // Reset to active polling rate (2.5s) while prefetching
-    if (state.cacheWindowTimer) {
-      clearInterval(state.cacheWindowTimer);
-      state.cachePollInterval = 2500;
-      state.cacheWindowTimer = setInterval(pollCacheWindow, 2500);
-    }
-    if (res.last_event === 'jump_cleared_refilling') {
-      showToast(`已跳级至第 ${ep.number} 集，已清空并重置后10集预载窗口`, 'info', 2200);
-    }
-  } catch (e) {
-    console.warn('Cache window activate failed:', e);
-  }
-}
-
-export function updateCacheWindowUI(res) {
-  if (!res) return;
-  state.cachedEpIDs = new Set(res.cached_ep_ids || []);
-  if (el.cacheStatusText) {
-    const prefetchStr = res.is_prefetching ? ' (⚡正在缓存后10集...)' : ' (已就绪)';
-    el.cacheStatusText.textContent = `智能缓存: 已缓存 ${res.total_cached || 0}/${res.max_cached || 12} 集${prefetchStr}`;
-  }
-  // Update episode buttons cached indicator
-  el.episodesGrid.querySelectorAll('.ep-btn').forEach((btn) => {
-    const epNum = parseInt(btn.textContent, 10);
-    const ep = state.episodes.find((e) => e.number === epNum);
-    if (ep && state.cachedEpIDs.has(ep.id)) {
-      btn.classList.add('cached');
-      btn.title = `第 ${ep.number} 集 (已本地缓存 秒播)`;
-    } else {
-      btn.classList.remove('cached');
-    }
-  });
-}
-
-export async function pollCacheWindow() {
-  if (!state.currentSeries || el.viewTheater.style.display === 'none') return;
-  try {
-    const res = await apiGet(`/api/cache/window?series_id=${encodeURIComponent(state.currentSeries.id)}&quality=${encodeURIComponent(state.currentQuality)}`);
-    updateCacheWindowUI(res);
-    // Adaptive polling: poll at 2.5s while prefetching; back off to 8s once idle
-    if (state.cacheWindowTimer) {
-      const targetInterval = res && res.is_prefetching ? 2500 : 8000;
-      if (state.cachePollInterval !== targetInterval) {
-        state.cachePollInterval = targetInterval;
-        clearInterval(state.cacheWindowTimer);
-        state.cacheWindowTimer = setInterval(pollCacheWindow, targetInterval);
-      }
-    }
-  } catch (e) {}
-}
-
-export function switchToTheater() {
-  el.viewCatalog.style.display = 'none';
-  el.viewTheater.style.display = 'block';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  if (!state.cacheWindowTimer) {
-    pollCacheWindow();
-    state.cacheWindowTimer = setInterval(pollCacheWindow, 2500);
-  }
-}
-
-export function switchToCatalog() {
-  if (state.loadingTimer) {
-    clearTimeout(state.loadingTimer);
-    state.loadingTimer = null;
-  }
-  el.videoLoading.style.display = 'none';
-  if (art) art.pause();
-  el.viewTheater.style.display = 'none';
-  el.viewCatalog.style.display = 'block';
-  if (state.cacheWindowTimer) {
-    clearInterval(state.cacheWindowTimer);
-    state.cacheWindowTimer = null;
-  }
-}
-
-
-export function applyAspectRatio(mode = 'auto') {
-  state.aspectRatio = mode;
-  try { localStorage.setItem('ohg_aspect_ratio', mode); } catch (e) {}
-  if (el.selectAspectRatio && el.selectAspectRatio.value !== mode) {
-    el.selectAspectRatio.value = mode;
-  }
-
-  if (!el.videoContainer) return;
-
-  el.videoContainer.classList.remove(
-    'aspect-portrait',
-    'aspect-16-9',
-    'aspect-4-3',
-    'aspect-fill',
-    'aspect-original'
-  );
-
-  let noticeText = '';
-
-  if (mode === 'auto') {
-    const video = art && art.video;
-    if (video && video.videoWidth && video.videoHeight) {
-      if (video.videoHeight > video.videoWidth) {
-        el.videoContainer.classList.add('aspect-portrait');
-        noticeText = '画面已自适应为 9:16 竖屏模式';
-      } else {
-        el.videoContainer.classList.add('aspect-16-9');
-        noticeText = '画面已自适应为 16:9 宽屏模式';
-      }
-    } else {
-      el.videoContainer.classList.add('aspect-16-9');
-    }
-  } else if (mode === '16:9') {
-    el.videoContainer.classList.add('aspect-16-9');
-    noticeText = '已切换为 16:9 宽屏模式';
-  } else if (mode === '9:16') {
-    el.videoContainer.classList.add('aspect-portrait');
-    noticeText = '已切换为 9:16 竖屏短剧模式';
-  } else if (mode === '4:3') {
-    el.videoContainer.classList.add('aspect-4-3');
-    noticeText = '已切换为 4:3 经典模式';
-  } else if (mode === 'fill') {
-    el.videoContainer.classList.add('aspect-fill');
-    noticeText = '已切换为铺满拉伸模式';
-  } else if (mode === 'original') {
-    el.videoContainer.classList.add('aspect-original');
-    noticeText = '已切换为原始比例模式';
-  }
-
-  if (art) {
-    setTimeout(() => {
-      try {
-        art.resize();
-        if (noticeText && art.notice) {
-          art.notice.show = noticeText;
-        }
-      } catch (e) {}
-    }, 60);
-  }
-}
-
-export function toggleTheaterWide(force) {
-  state.theaterWide = typeof force === 'boolean' ? force : !state.theaterWide;
-  try { localStorage.setItem('ohg_theater_wide', state.theaterWide ? 'true' : 'false'); } catch (e) {}
-
-  if (el.theaterContainer) {
-    el.theaterContainer.classList.toggle('theater-wide', state.theaterWide);
-  }
-
-  if (el.btnTheaterMode) {
-    el.btnTheaterMode.classList.toggle('active', state.theaterWide);
-    const textEl = el.btnTheaterMode.querySelector('.theater-mode-text');
-    if (textEl) {
-      textEl.textContent = state.theaterWide ? '标准分栏' : '大屏模式';
-    }
-  }
-
-  showToast(state.theaterWide ? '已开启剧场大屏模式' : '已恢复标准分栏视图', 'info');
-
-  if (art) {
-    setTimeout(() => {
-      try {
-        art.resize();
-      } catch (e) {}
-    }, 120);
-  }
-}
-
-export function initPlayerPreferences() {
-  const savedAspect = localStorage.getItem('ohg_aspect_ratio') || 'auto';
-  state.aspectRatio = savedAspect;
-  if (el.selectAspectRatio) {
-    el.selectAspectRatio.value = savedAspect;
-  }
-  applyAspectRatio(savedAspect);
-
-  const savedWide = localStorage.getItem('ohg_theater_wide') === 'true';
-  state.theaterWide = savedWide;
-  if (el.theaterContainer) {
-    el.theaterContainer.classList.toggle('theater-wide', savedWide);
-  }
-  if (el.btnTheaterMode) {
-    el.btnTheaterMode.classList.toggle('active', savedWide);
-    const textEl = el.btnTheaterMode.querySelector('.theater-mode-text');
-    if (textEl) {
-      textEl.textContent = savedWide ? '标准分栏' : '大屏模式';
-    }
-  }
-
-  let resizeTimer = null;
-  window.addEventListener('resize', () => {
-    if (resizeTimer) clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => {
-      if (art && el.viewTheater && el.viewTheater.style.display !== 'none') {
-        try {
-          art.resize();
-          if (state.aspectRatio === 'auto') {
-            applyAspectRatio('auto');
-          }
-        } catch (e) {}
-      }
-    }, 150);
-  });
+  };
 }
