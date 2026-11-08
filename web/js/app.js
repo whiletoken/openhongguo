@@ -23,6 +23,8 @@ import {
   getArtPlayer,
   applyAspectRatio,
   toggleTheaterWide,
+  toggleEpisodesHidden,
+  switchEpisodeChunk,
   initPlayerPreferences,
 } from './player.js';
 import {
@@ -265,13 +267,58 @@ function setupEventListeners() {
     };
   }
 
+  // Episode Panel Hide / Show Toggles (向右隐藏 / 展开)
+  if (el.btnHideEpisodes) {
+    el.btnHideEpisodes.onclick = () => {
+      toggleEpisodesHidden(true);
+    };
+  }
+  if (el.btnToggleEpisodesTop) {
+    el.btnToggleEpisodesTop.onclick = () => {
+      toggleEpisodesHidden();
+    };
+  }
+  if (el.btnToggleEpisodesBar) {
+    el.btnToggleEpisodesBar.onclick = () => {
+      toggleEpisodesHidden();
+    };
+  }
+
+  // Episode Pagination Steppers (上一组 / 下一组)
+  if (el.btnEpChunkPrev) {
+    el.btnEpChunkPrev.onclick = () => {
+      switchEpisodeChunk((state.currentChunkIndex || 0) - 1);
+    };
+  }
+  if (el.btnEpChunkNext) {
+    el.btnEpChunkNext.onclick = () => {
+      switchEpisodeChunk((state.currentChunkIndex || 0) + 1);
+    };
+  }
+
+  // Keyboard Shortcuts Tip
+  if (el.btnShortcutsTip) {
+    el.btnShortcutsTip.onclick = () => {
+      showToast('快捷键: 空格/K 播放/暂停 | 左右方向键 快退/快进5秒 | 上下键 调音量 | [ ] 上下集 | F 全屏', 'info', 4000);
+    };
+  }
+
   // Sidebar Collapse / Mobile Toggle
-  const btnSidebarToggle = document.getElementById('btn-sidebar-toggle');
   const sidebarBackdrop = document.getElementById('sidebar-backdrop');
   const app = document.getElementById('app');
 
-  if (btnSidebarToggle && app) {
-    btnSidebarToggle.onclick = () => {
+  if (el.btnSidebarCollapse && app) {
+    el.btnSidebarCollapse.onclick = () => {
+      if (window.innerWidth <= 768) {
+        app.classList.remove('sidebar-mobile-open');
+      } else {
+        app.classList.add('sidebar-collapsed');
+      }
+    };
+  }
+
+  if (el.btnSidebarToggle && app) {
+    el.btnSidebarToggle.onclick = () => {
       if (window.innerWidth <= 768) {
         app.classList.toggle('sidebar-mobile-open');
       } else {

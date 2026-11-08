@@ -185,6 +185,11 @@ export function renderSeriesCards(items) {
     card.innerHTML = `
       <div class="card-poster-wrapper">
         <img class="card-poster" src="${escapeHtml(coverUrl)}" alt="${escapeHtml(item.title || '短剧')}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 400%22><rect width=%22300%22 height=%22400%22 fill=%22%23222%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23888%22 font-size=%2220%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>红果短剧</text></svg>'">
+        <div class="card-play-icon" title="立即播放">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <polygon points="7 4 19 12 7 20 7 4"></polygon>
+          </svg>
+        </div>
         <button class="card-fav-btn ${fav ? 'active' : ''}" data-series-id="${escapeHtml(item.id)}" title="${fav ? '已收藏 (点击取消)' : '加入收藏'}" type="button">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="${fav ? '#fadb14' : 'none'}" stroke="${fav ? '#fadb14' : '#ffffff'}" stroke-width="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>

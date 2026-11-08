@@ -185,7 +185,9 @@ export async function openSeries(seriesId, targetEpNum = 1) {
       if (foundIdx !== -1) startEpIndex = foundIdx;
     }
 
-    renderEpisodeRangeTabs();
+    state.currentChunkIndex = Math.floor(startEpIndex / 30);
+    renderEpisodePagination();
+    renderEpisodeButtonsForCurrentPage();
     loadEpisode(startEpIndex, true, resumeSeconds);
   } catch (err) {
     showToast('加载短剧详情失败: ' + err.message, 'error');
@@ -250,63 +252,110 @@ export async function loadEpisode(index, autoPlay = true, resumeSeconds = 0) {
   // Update button states
   el.btnEpPrev.disabled = index <= 0;
   el.btnEpNext.disabled = index >= state.episodes.length - 1;
-  updateActiveEpisodeButton();
 
-  // Auto switch range tab if needed
-  const chunkSize = 30;
-  const chunkIdx = Math.floor(index / chunkSize);
-  const tabs = el.epRangeTabs.querySelectorAll('.ep-range-tab');
-  if (tabs[chunkIdx] && !tabs[chunkIdx].classList.contains('active')) {
-    tabs.forEach((t) => t.classList.remove('active'));
-    tabs[chunkIdx].classList.add('active');
-    renderEpisodeButtons(chunkIdx * chunkSize, Math.min((chunkIdx + 1) * chunkSize, state.episodes.length));
+  // Auto switch page chunk if needed
+  const EP_CHUNK_SIZE = 30;
+  const neededChunk = Math.floor(index / EP_CHUNK_SIZE);
+  if (neededChunk !== (state.currentChunkIndex || 0)) {
+    state.currentChunkIndex = neededChunk;
+    renderEpisodePagination();
+    renderEpisodeButtonsForCurrentPage();
   }
+  updateActiveEpisodeButton();
 
   saveCurrentHistory(player, false);
 }
 
-export function renderEpisodeRangeTabs() {
-  const total = state.episodes.length;
-  const chunkSize = 30;
-  el.epRangeTabs.innerHTML = '';
+export function toggleEpisodesHidden(force) {
+  const container = el.theaterContainer;
+  if (!container) return;
 
-  if (total <= chunkSize) {
-    el.epRangeTabs.style.display = 'none';
-    renderEpisodeButtons(0, total);
+  const isHidden = typeof force === 'boolean' ? force : !container.classList.contains('episodes-hidden');
+  container.classList.toggle('episodes-hidden', isHidden);
+
+  if (el.btnToggleEpisodesTop) {
+    el.btnToggleEpisodesTop.classList.toggle('active', isHidden);
+    el.btnToggleEpisodesTop.title = isHidden ? '展开选集面板' : '收起选集面板';
+  }
+
+  if (el.btnToggleEpisodesBar) {
+    el.btnToggleEpisodesBar.classList.toggle('active', isHidden);
+  }
+
+  const art = getArtPlayer();
+  if (art && typeof art.resize === 'function') {
+    setTimeout(() => art.resize(), 260);
+  }
+}
+
+const EP_CHUNK_SIZE = 30;
+
+export function renderEpisodePagination() {
+  const total = state.episodes.length;
+  if (!el.episodesPaginationModule) return;
+
+  if (total <= EP_CHUNK_SIZE) {
+    el.episodesPaginationModule.style.display = 'none';
     return;
   }
 
-  el.epRangeTabs.style.display = 'flex';
-  const numChunks = Math.ceil(total / chunkSize);
+  el.episodesPaginationModule.style.display = 'flex';
+  const numChunks = Math.ceil(total / EP_CHUNK_SIZE);
+  const curChunk = state.currentChunkIndex || 0;
 
+  // Stepper navigation buttons
+  if (el.btnEpChunkPrev) {
+    el.btnEpChunkPrev.disabled = curChunk <= 0;
+  }
+  if (el.btnEpChunkNext) {
+    el.btnEpChunkNext.disabled = curChunk >= numChunks - 1;
+  }
+  if (el.epPageIndicator) {
+    const start = curChunk * EP_CHUNK_SIZE + 1;
+    const end = Math.min((curChunk + 1) * EP_CHUNK_SIZE, total);
+    el.epPageIndicator.textContent = `第 ${curChunk + 1}/${numChunks} 组 (${start}-${end}集)`;
+  }
+
+  // Generous, prominent range tabs
+  el.epRangeTabs.innerHTML = '';
   for (let i = 0; i < numChunks; i++) {
-    const start = i * chunkSize + 1;
-    const end = Math.min((i + 1) * chunkSize, total);
+    const start = i * EP_CHUNK_SIZE + 1;
+    const end = Math.min((i + 1) * EP_CHUNK_SIZE, total);
     const tab = document.createElement('button');
-    tab.className = `ep-range-tab ${i === Math.floor(state.currentEpIndex / chunkSize) ? 'active' : ''}`;
-    tab.textContent = `${start}-${end}`;
+    tab.className = `ep-range-tab ${i === curChunk ? 'active' : ''}`;
+    tab.textContent = `${start} - ${end} 集`;
     tab.onclick = () => {
-      el.epRangeTabs.querySelectorAll('.ep-range-tab').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      renderEpisodeButtons(i * chunkSize, end);
+      switchEpisodeChunk(i);
     };
     el.epRangeTabs.appendChild(tab);
   }
-
-  const activeChunk = Math.floor(state.currentEpIndex / chunkSize);
-  renderEpisodeButtons(activeChunk * chunkSize, Math.min((activeChunk + 1) * chunkSize, total));
 }
 
-export function renderEpisodeButtons(startIndex, endIndex) {
-  el.episodesGrid.innerHTML = '';
-  const slice = state.episodes.slice(startIndex, endIndex);
+export function switchEpisodeChunk(chunkIdx) {
+  const numChunks = Math.ceil(state.episodes.length / EP_CHUNK_SIZE);
+  if (chunkIdx < 0 || chunkIdx >= numChunks) return;
+  state.currentChunkIndex = chunkIdx;
+  renderEpisodePagination();
+  renderEpisodeButtonsForCurrentPage();
+  updateActiveEpisodeButton();
+}
 
-  slice.forEach((ep, idx) => {
-    const realIndex = startIndex + idx;
+export function renderEpisodeButtonsForCurrentPage() {
+  el.episodesGrid.innerHTML = '';
+  const total = state.episodes.length;
+  const curChunk = state.currentChunkIndex || 0;
+  const start = curChunk * EP_CHUNK_SIZE;
+  const end = Math.min(start + EP_CHUNK_SIZE, total);
+
+  for (let realIndex = start; realIndex < end; realIndex++) {
+    const ep = state.episodes[realIndex];
+    if (!ep) continue;
     const btn = document.createElement('button');
     const isCached = state.cachedEpIDs && state.cachedEpIDs.has(ep.id);
     btn.className = `ep-btn ${realIndex === state.currentEpIndex ? 'active' : ''} ${isCached ? 'cached' : ''}`;
     btn.textContent = ep.number || (realIndex + 1);
+    btn.dataset.index = realIndex;
+    btn.dataset.epNum = ep.number || (realIndex + 1);
     const cachedTip = isCached ? ' (已本地缓存 秒播)' : '';
     btn.title = `第 ${ep.number} 集${ep.title ? ' - ' + ep.title : ''}${cachedTip}`;
     btn.onclick = () => {
@@ -314,18 +363,32 @@ export function renderEpisodeButtons(startIndex, endIndex) {
       loadEpisode(realIndex, true);
     };
     el.episodesGrid.appendChild(btn);
-  });
+  }
 }
 
 export function updateActiveEpisodeButton() {
+  let activeBtn = null;
   el.episodesGrid.querySelectorAll('.ep-btn').forEach((btn) => {
-    const epNum = parseInt(btn.textContent, 10);
-    btn.classList.toggle('active', epNum === (state.currentEpIndex + 1));
-    const ep = state.episodes.find((e) => e.number === epNum);
+    const idx = parseInt(btn.dataset.index, 10);
+    const isActive = idx === state.currentEpIndex;
+    btn.classList.toggle('active', isActive);
+    if (isActive) activeBtn = btn;
+    const ep = state.episodes[idx];
     if (ep && state.cachedEpIDs && state.cachedEpIDs.has(ep.id)) {
       btn.classList.add('cached');
     }
   });
+
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  // Update active range tab highlight
+  if (state.episodes.length > EP_CHUNK_SIZE) {
+    const curChunk = state.currentChunkIndex || 0;
+    const tabs = el.epRangeTabs.querySelectorAll('.ep-range-tab');
+    tabs.forEach((t, i) => t.classList.toggle('active', i === curChunk));
+  }
 }
 
 export async function notifyActiveCache(ep) {

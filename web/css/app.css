@@ -82,9 +82,31 @@ body {
   min-height: 64px;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  justify-content: space-between;
+  padding: 0 14px 0 20px;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
+}
+
+.sidebar-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-subtle);
 }
 
 .brand {
@@ -706,6 +728,39 @@ body {
   transition: transform 0.4s ease;
 }
 
+.card-poster-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.card-play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), #d91438);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 18px rgba(255, 42, 75, 0.5);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.series-card:hover .card-play-icon {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .series-card:hover .card-poster {
   transform: scale(1.05);
 }
@@ -943,33 +998,84 @@ body {
 
 /* === Theater Mode / Video Player View === */
 .theater-container {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 24px;
   align-items: start;
+  transition: grid-template-columns var(--transition-normal), gap var(--transition-normal);
+}
+
+.theater-container.episodes-hidden {
+  grid-template-columns: 1fr 0px;
+  gap: 0;
 }
 
 .theater-left {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  transition: width var(--transition-normal);
 }
 
-.player-wrapper {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-card);
-}
-
+/* Player Top Bar Actions & Episodes Toggle */
 .player-back-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 18px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+}
+
+.player-back-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-back-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.btn-back-action:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-light);
+  color: var(--text-main);
+}
+
+.episodes-toggle-btn.active,
+.btn-toggle-episodes-top.active {
+  background: rgba(255, 42, 75, 0.16);
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+  box-shadow: 0 0 10px var(--color-primary-glow);
+}
+
+.episodes-toggle-btn.active svg,
+.btn-toggle-episodes-top.active svg {
+  transform: rotate(180deg);
+}
+
+.btn-shortcuts-tip:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
 }
 
 .btn-back {
@@ -1251,6 +1357,18 @@ body {
 .theater-right {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal), width var(--transition-normal), visibility var(--transition-normal);
+  transform-origin: right center;
+}
+
+.theater-container.episodes-hidden .theater-right {
+  transform: translateX(48px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  width: 0;
+  overflow: hidden;
 }
 
 .series-panel {
@@ -1405,6 +1523,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+
+.episodes-title-left {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .cache-status-bar {
@@ -1441,65 +1566,172 @@ body {
   color: var(--text-muted);
 }
 
+/* === Episodes Pagination Module (规范大尺寸页码模块) === */
+.episodes-pagination-module {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+}
+
+.ep-pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-ep-page-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.btn-ep-page-step:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-light);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-ep-page-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ep-page-indicator {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .ep-range-tabs {
   display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 88px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 2px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.ep-range-tabs::-webkit-scrollbar {
+  width: 4px;
+}
+
+.ep-range-tabs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
 }
 
 .ep-range-tab {
+  flex: 1;
+  min-width: 96px;
+  height: 38px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 11.5px;
-  padding: 3px 9px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
-  transition: var(--transition-fast);
+  transition: all var(--transition-fast);
+  user-select: none;
 }
 
 .ep-range-tab:hover {
   color: var(--text-main);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-light);
+  transform: translateY(-1px);
 }
 
 .ep-range-tab.active {
-  background: var(--bg-elevated);
-  border-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(255, 42, 75, 0.95), rgba(217, 20, 56, 0.95));
+  border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 14px var(--color-primary-glow);
 }
 
 .episodes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   overflow-y: auto;
-  max-height: 380px;
-  padding-right: 4px;
+  overflow-x: hidden;
+  max-height: 440px;
+  min-height: 200px;
+  padding-right: 6px;
+  padding-bottom: 12px;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.episodes-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.episodes-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.episodes-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-full);
+}
+
+.episodes-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 .ep-btn {
   position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-main);
-  height: 40px;
+  height: 44px;
   border-radius: var(--radius-sm);
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-fast);
+  transition: all var(--transition-fast);
+  user-select: none;
 }
 
 .ep-btn.cached:not(.active) {
-  border-color: rgba(0, 210, 106, 0.4);
-  background: rgba(0, 210, 106, 0.05);
+  border-color: rgba(0, 210, 106, 0.35);
+  background: rgba(0, 210, 106, 0.06);
 }
 
 .ep-btn.cached::after {
@@ -1511,21 +1743,31 @@ body {
   height: 5px;
   border-radius: 50%;
   background: var(--color-accent);
-  box-shadow: 0 0 5px rgba(0, 210, 106, 0.8);
+  box-shadow: 0 0 6px rgba(0, 210, 106, 0.9);
 }
 
 .ep-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-light);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .ep-btn.active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
+  background: linear-gradient(135deg, #ff2a4b, #d91438);
+  border-color: rgba(255, 255, 255, 0.35);
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 2px 10px var(--color-primary-glow);
+  box-shadow: 0 4px 16px var(--color-primary-glow);
+  transform: scale(1.02);
+}
+
+.ep-btn.active::before {
+  content: "▶";
+  font-size: 8px;
+  margin-right: 4px;
+  opacity: 0.95;
 }
 
 .ep-btn.watched:not(.active) {
@@ -1855,6 +2097,13 @@ body {
   .theater-container {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+  .theater-container.episodes-hidden {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .theater-container.episodes-hidden .theater-right {
+    display: none !important;
   }
   .series-panel {
     max-height: none;
