@@ -43,7 +43,7 @@ export function getOrInitArtPlayer(streamUrl, title) {
     airplay: false,
     theme: '#ff4d4f',
     lang: 'zh-cn',
-    hotkey: true,
+    hotkey: false,
     controls: [
       {
         name: 'prev-ep',
@@ -309,7 +309,10 @@ export function renderEpisodeButtons(startIndex, endIndex) {
     btn.textContent = ep.number || (realIndex + 1);
     const cachedTip = isCached ? ' (已本地缓存 秒播)' : '';
     btn.title = `第 ${ep.number} 集${ep.title ? ' - ' + ep.title : ''}${cachedTip}`;
-    btn.onclick = () => loadEpisode(realIndex, true);
+    btn.onclick = () => {
+      btn.blur();
+      loadEpisode(realIndex, true);
+    };
     el.episodesGrid.appendChild(btn);
   });
 }

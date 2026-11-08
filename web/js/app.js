@@ -334,7 +334,10 @@ function setupEventListeners() {
 
   // Global Keyboard Shortcuts
   window.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    const targetTag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+    const isEditing = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || (e.target && e.target.isContentEditable);
+
+    if (isEditing) {
       if (e.key === 'Escape') {
         hideSearchHistory();
         e.target.blur();
@@ -362,31 +365,64 @@ function setupEventListeners() {
     }
 
     const art = getArtPlayer();
-    if (el.viewTheater.style.display !== 'none' && art) {
+    if (el.viewTheater && el.viewTheater.style.display !== 'none' && art) {
+      const isSpace = e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar' || e.keyCode === 32;
+
+      if (isSpace || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (document.activeElement && typeof document.activeElement.blur === 'function') {
+          document.activeElement.blur();
+        }
+        if (typeof art.toggle === 'function') {
+          art.toggle();
+        } else if (art.video) {
+          if (art.video.paused) {
+            art.play();
+          } else {
+            art.pause();
+          }
+        }
+        return;
+      }
+
       switch (e.key) {
-        case ' ':
-        case 'k':
-        case 'K':
-          e.preventDefault();
-          if (art.video && art.video.paused) art.play();
-          else art.pause();
-          break;
         case 'ArrowLeft':
+        case 'j':
+        case 'J':
           e.preventDefault();
           art.currentTime = Math.max(0, art.currentTime - 5);
           break;
         case 'ArrowRight':
+        case 'l':
+        case 'L':
           e.preventDefault();
           art.currentTime = Math.min(art.duration || 9999, art.currentTime + 5);
           break;
+        case 'ArrowUp':
+          e.preventDefault();
+          art.volume = Math.min(1, Number((art.volume + 0.1).toFixed(2)));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          art.volume = Math.max(0, Number((art.volume - 0.1).toFixed(2)));
+          break;
+        case 'm':
+        case 'M':
+          e.preventDefault();
+          art.muted = !art.muted;
+          break;
         case '[':
+          e.preventDefault();
           el.btnEpPrev.click();
           break;
         case ']':
+          e.preventDefault();
           el.btnEpNext.click();
           break;
         case 'f':
         case 'F':
+          e.preventDefault();
           art.fullscreen = !art.fullscreen;
           break;
       }
