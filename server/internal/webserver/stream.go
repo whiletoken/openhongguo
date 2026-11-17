@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/internal/logger"
-	"github.com/beilunyang/openhongguo/server/sdk"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
+	"github.com/beilunyang/openhongguo/sdk"
 )
 
 // StreamManager coordinates video streaming, decryption, and caching.

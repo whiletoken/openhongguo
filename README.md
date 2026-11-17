@@ -1,6 +1,8 @@
 # OpenHongguo (红果短剧)
 
-OpenHongguo 是一个遵循现代工程规范的开源短剧聚合与流媒体播放系统。本项目采用类似 **Maven 多模块工程架构** 进行全量分层重构，将整个项目划分为服务端 (`server`)、Windows 客户端 (`client-windows`) 与 Web 前端 (`web`) 三大独立高内聚子模块，并提供统一的构建管理与快速启动入口。
+OpenHongguo 是一个遵循现代工程规范的开源短剧聚合与流媒体播放系统。本项目改变了以往维护上游全量 Fork 源码的思路，**彻底放弃源码 Fork 代码，改为主动集成上游官方编译包 SDK (`beilunyang/openhongguo@v0.3.0`)**。
+
+上游 SDK 负责底层的协议逆向工程、匿名设备维护与最新的 Argus 551 / Ladon 动态签名计算；OpenHongguo 则作为现代化的多端媒体平台，采用类似 **Maven 多模块工程架构** 进行全量分层重构，划分为服务端 (`server`)、Windows 客户端 (`client-windows`)、Web 前端 (`web`) 与容器化 (`docker`) 四大独立高内聚子模块，并提供统一的构建管理与快速启动入口。
 
 ---
 
@@ -12,27 +14,25 @@ OpenHongguo 是一个遵循现代工程规范的开源短剧聚合与流媒体�
 openhongguo/                               # [Parent] 根工程聚合器
 ├── pom.xml                                # Maven 父工程定义 (Parent POM)
 ├── Makefile                               # 统一构建编排 Makefile
-│
 ├── bin/                                   # 统一编译产物输出目录
 │   ├── ohg-server.exe                     # 服务端与静态资源托管可执行文件
 │   ├── ohg-desktop.exe                    # Windows 原生无边框桌面客户端
-│   └── ohg.exe                            # 终端交互式命令行工具 (CLI)
-│
-├── server/                                # [Module 1] 服务端核心模块 (Go)
+│   └── ohg.exe                            # 主动集成的上游 SDK 命令行工具 (CLI)
+├── server/                                # [Module 1] 服务端核心模块 (Go，主动集成上游 SDK)
 │   ├── pom.xml                            # Maven 服务端子模块定义
 │   ├── README.md                          # 服务端独立文档
-│   ├── cmd/                               # 服务端应用主入口 (ohg-server, ohg)
-│   ├── internal/                          # 核心业务逻辑 (webserver, protocol, drm, favorite, history)
-│   ├── adapters/                          # 基础存储与传输适配器 (filestore, httptransport, memstore)
-│   ├── sdk/                               # Go 原生业务 SDK
-│   └── bindings/                          # 多端语言绑定 (Mobile, Flutter, Node, React Native)
-│
+│   ├── cmd/ohg-server/                    # 服务端主入口
+│   └── internal/                          # 核心业务逻辑
+│       ├── webserver/                     # RESTful API、流媒体反代代理、PID 互斥与智能传输、弹幕 API
+│       ├── favorite/                      # 追剧收藏夹持久化存储引擎 (JSON Store)
+│       ├── history/                       # 播放历史进度与断点续播持久化引擎
+│       ├── logger/                        # 高性能结构化日志 (Zap + Lumberjack) 与 SafeGo 异常容灾
+│       └── media/                         # 媒体播放器进程管道调度 (FFplay / MPV / VLC / FFmpeg)
 ├── client-windows/                        # [Module 2] Windows 原生客户端模块 (Rust)
 │   ├── pom.xml                            # Maven Windows 客户端子模块定义
 │   ├── README.md                          # Windows 客户端独立文档
 │   ├── Cargo.toml                         # Rust 包与依赖清单
 │   └── src/                               # 原生无边框窗口、播放器探测 (MPV/VLC/FFplay) 与 UI 服务
-│
 ├── web/                                   # [Module 3] Web 前端客户端模块 (HTML5/CSS3/ES6)
 │   ├── pom.xml                            # Maven Web 端子模块定义
 │   ├── package.json                       # Web 端工程元数据
@@ -41,7 +41,6 @@ openhongguo/                               # [Parent] 根工程聚合器
 │   ├── web.go                             # Go embed 静态资源一键打包桥接器
 │   ├── css/                               # 模块化样式 (布局、栅格、影院模式、响应式)
 │   └── js/                                # 模块化脚本 (状态总线、API、选集分页、ArtPlayer 播放器)
-│
 ├── docker/                                # [Module 4] 容器化构建与编排模块
 │   ├── pom.xml                            # Maven Docker 子模块定义
 │   ├── Dockerfile                         # 镜像多阶段极速构建文件
@@ -50,20 +49,24 @@ openhongguo/                               # [Parent] 根工程聚合器
 │   ├── README.md                          # Docker 部署与运维指南
 │   ├── start-docker.bat                   # Windows 容器一键构建启动脚本
 │   └── start-docker.sh                    # Linux/macOS 容器启动脚本
-│
 └── scripts/                               # 统一运维、打包与启动脚本目录
     ├── windows/                           # Windows 批处理启动脚本与快捷方式生成器
-    └── docker/                            # Docker 一键构建与容器启动脚本
+    ├── docker/                            # Docker 一键构建与容器启动脚本
+    ├── integrate-upstream-sdk.ps1         # 上游 SDK 编译包主动集成工具 (PowerShell)
+    └── integrate-upstream-sdk.sh          # 上游 SDK 编译包主动集成工具 (Bash)
 ```
 
 ### 架构拓扑与交互关系
-
 ```mermaid
 graph TD
     Parent["OpenHongguo Parent 工程 (pom.xml / Makefile)"] --> ServerModule["server 模块 (Go)"]
     Parent --> WindowsModule["client-windows 模块 (Rust)"]
     Parent --> WebModule["web 模块 (HTML5/CSS3/JS)"]
     Parent --> DockerModule["docker 模块 (Compose / Dockerfile)"]
+    Parent --> UpstreamSDK["上游官方编译包 SDK (beilunyang/openhongguo@v0.3.0)"]
+
+    UpstreamSDK -.->|"go.mod 依赖集成 / 编译包工具链"| ServerModule
+    UpstreamSDK -.->|"集成 CLI 产物至 bin/ohg.exe"| Parent
 
     WebModule -.->|"编译期静态嵌入 (web.go)"| ServerModule
     WebModule -.->|"编译期静态嵌入 (include_bytes!)"| WindowsModule
@@ -71,7 +74,8 @@ graph TD
     WindowsModule -->|"本地 HTTP API 交互 (127.0.0.1:5210)"| ServerModule
     Browser["外部浏览器 / 移动端"] -->|"访问 Web 播放中心"| ServerModule
 
-    ServerModule -->|"协议逆向 & DRM 解密"| HongguoAPI["红果短剧官方 CDN / 接口"]
+    ServerModule -->|"调用 SDK Client / 智能传输 SmartTransport"| UpstreamSDK
+    UpstreamSDK -->|"Argus/Ladon 动态签名 & 匿名设备鉴权"| HongguoAPI["红果短剧官方 CDN / 接口"]
     WindowsModule -->|"调度开源播放器"| Players["MPV / FFplay / VLC 播放器"]
 ```
 
@@ -96,38 +100,42 @@ graph TD
 ### 1. Maven 多模块构建 (推荐)
 本项目完整支持 Maven 反应堆编排，由 `openhongguo-parent` 统一调度：
 ```bash
-# 一键编译所有子模块 (server, client-windows, web)
+# 一键编译所有子模块 (server, client-windows, web, docker) 并自动集成上游 SDK CLI
 mvn compile
 
 # 仅编译服务端模块
 mvn compile -pl server
 
-# 仅编译 Windows 桌面客户端模块
-mvn compile -pl client-windows
-
-# 清理构建产物
+# 清理所有模块编译中间文件
 mvn clean
 ```
 
 ### 2. Make 构建
 ```bash
-make binaries   # 构建全部二进制 (CLI, Server, Windows Client)
-make server     # 仅构建 Go 服务端 bin/ohg-server.exe
+make binaries   # 一键构建 Server、Windows 客户端与上游 CLI 编译包至 bin/
+make server     # 仅构建 Go 服务端 bin/ohg-server
 make windows    # 仅构建 Rust 客户端 bin/ohg-desktop.exe
-make test       # 运行自动化单元测试
+make cli        # 编译集成上游 CLI 工具 bin/ohg
+make sdk-fetch  # 检查并更新最新上游 SDK 依赖
+make test       # 运行全模块测试
 ```
 
-### 3. Docker 容器构建
-```bash
-# 使用 Docker Compose 一键拉起
-docker compose up -d --build
-```
+### 3. 主动集成上游 SDK 编译包
+如果需要单独重新拉取或编译上游 SDK 命令行工具包：
+- **PowerShell (Windows)**:
+  ```powershell
+  .\scripts\integrate-upstream-sdk.ps1
+  ```
+- **Bash (Linux/macOS)**:
+  ```bash
+  ./scripts/integrate-upstream-sdk.sh
+  ```
 
 ---
 
-## 📦 模块分工说明
+## 📦 各模块详细设计文档
 
-- **[server (openhongguo-server)](server/README.md)**：包含服务端主程序、命令行工具与核心 SDK。负责请求签名、短剧元数据爬取、DRM 内容解密流转发、用户匿名身份激活与追剧进度持久化。
+- **[server (openhongguo-server)](server/README.md)**：后端核心服务模块，采用 Go 语言实现。主动集成官方 SDK 编译包，支持动态流媒体解密/缓存代理、SmartTransport DNS 智能回退、弹幕接口、收藏夹与追剧进度持久化。
 - **[client-windows (openhongguo-client-windows)](client-windows/README.md)**：专为 Windows 平台打造的高性能原生客户端，以极小的系统开销拉起无边框独立窗口，内置开源播放器嗅探引擎，支持一键调用 MPV/FFplay 进行硬件加速播放。
 - **[web (openhongguo-web)](web/README.md)**：模块化设计的轻量级短剧前端播放中心，内置 ArtPlayer 播放器内核，支持 9:16 移动端竖屏与 16:9 横屏双向适配、沉浸式影院模式以及 30 集分段大号选集面板。
 - **[docker (openhongguo-docker)](docker/README.md)**：容器化极速构建与服务编排模块，集成 BuildKit 缓存加速、国内镜像源预设、健康检查探活与数据卷持久化。

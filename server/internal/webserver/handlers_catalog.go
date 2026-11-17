@@ -1,13 +1,14 @@
-﻿package webserver
+package webserver
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/beilunyang/openhongguo/server/sdk"
-	"github.com/beilunyang/openhongguo/server/sdk/model"
+	"github.com/beilunyang/openhongguo/sdk"
+	"github.com/beilunyang/openhongguo/sdk/model"
 )
 
 // handleDiscover handles catalog channel feed requests.
@@ -128,4 +129,30 @@ func (s *Server) handlePlayback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, http.StatusOK, resp)
+}
+
+// handleDanmaku returns the bullet comments (danmaku) for an episode.
+func (s *Server) handleDanmaku(w http.ResponseWriter, r *http.Request) {
+	seriesID := r.URL.Query().Get("series_id")
+	episodeID := r.URL.Query().Get("episode_id")
+	if seriesID == "" || episodeID == "" {
+		jsonError(w, http.StatusBadRequest, "series_id and episode_id are required")
+		return
+	}
+	cursor := r.URL.Query().Get("cursor")
+	startMsStr := r.URL.Query().Get("start_ms")
+	var startMs int64
+	if startMsStr != "" {
+		startMs, _ = strconv.ParseInt(startMsStr, 10, 64)
+	}
+
+	page, err := s.client.ListDanmaku(r.Context(), seriesID, episodeID, sdk.DanmakuOptions{
+		Cursor:  cursor,
+		StartMs: startMs,
+	})
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	jsonResponse(w, http.StatusOK, page)
 }

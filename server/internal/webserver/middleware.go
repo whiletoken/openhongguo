@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/internal/logger"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
 	"go.uber.org/zap"
 )
 

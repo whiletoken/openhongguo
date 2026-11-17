@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/sdk"
+	"github.com/beilunyang/openhongguo/sdk"
 )
 
 // Fallback DNS servers to bypass adblock sinkholes (e.g., 0.0.0.0 for log5-applog-lq.fqnovel.com)

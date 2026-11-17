@@ -8,12 +8,16 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
 
 func stubPlayer(t *testing.T, name, output string) *Launcher {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping Unix shell script stub tests on Windows")
+	}
 	dir := t.TempDir()
 	script := filepath.Join(dir, name)
 	body := "#!/bin/sh\nprintf '%s\\n' \"$@\" > " + shellQuote(output) + "\n"
@@ -114,6 +118,9 @@ func TestSaveDownloadsAndRefusesOverwrite(t *testing.T) {
 }
 
 func TestDecryptInvokesFFmpegWithKey(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping Unix shell script stub tests on Windows")
+	}
 	dir := t.TempDir()
 	argsFile := filepath.Join(dir, "ffmpeg-args.txt")
 	script := filepath.Join(dir, "ffmpeg")

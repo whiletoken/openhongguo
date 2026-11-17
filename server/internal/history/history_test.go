@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -23,7 +24,7 @@ func TestRecordGetListAndClear(t *testing.T) {
 		}
 	}
 	info, err := os.Stat(path)
-	if err != nil || info.Mode().Perm() != 0600 {
+	if err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0600) {
 		t.Fatalf("mode = %v err = %v", info.Mode().Perm(), err)
 	}
 	got, ok, err := NewStore(path).Get(ctx, "1")
@@ -58,7 +59,8 @@ func TestRecordRejectsBadEntryAndSymlink(t *testing.T) {
 	}
 	link := filepath.Join(dir, "link.json")
 	if err := os.Symlink(filepath.Join(dir, "elsewhere"), link); err != nil {
-		t.Fatal(err)
+		t.Skipf("skipping symlink check: %v", err)
+		return
 	}
 	if err := NewStore(link).Record(ctx, Entry{SeriesID: "1", Episode: 1}); err == nil {
 		t.Fatal("symlink history accepted")

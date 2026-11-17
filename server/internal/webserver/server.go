@@ -7,10 +7,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/beilunyang/openhongguo/server/internal/favorite"
-	"github.com/beilunyang/openhongguo/server/internal/history"
-	"github.com/beilunyang/openhongguo/server/internal/media"
-	"github.com/beilunyang/openhongguo/server/sdk"
+	"github.com/whiletoken/openhongguo/server/internal/favorite"
+	"github.com/whiletoken/openhongguo/server/internal/history"
+	"github.com/whiletoken/openhongguo/server/internal/media"
+	"github.com/beilunyang/openhongguo/sdk"
 )
 
 func init() {
@@ -92,6 +92,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/series", s.handleSeries)
 	mux.HandleFunc("/api/episodes", s.handleEpisodes)
 	mux.HandleFunc("/api/playback", s.handlePlayback)
+	mux.HandleFunc("/api/danmaku", s.handleDanmaku)
 	mux.HandleFunc("/api/stream", s.handleStream)
 	mux.HandleFunc("/api/cache/active", s.handleActiveCache)
 	mux.HandleFunc("/api/cache/window", s.handleCacheWindow)

@@ -1,11 +1,11 @@
-﻿package webserver
+package webserver
 
 import (
 	"encoding/json"
 	"net/http"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/internal/favorite"
+	"github.com/whiletoken/openhongguo/server/internal/favorite"
 )
 
 // handleFavorites handles reading, adding, removing, and clearing favorite series.

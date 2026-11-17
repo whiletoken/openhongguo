@@ -16,14 +16,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/adapters"
-	"github.com/beilunyang/openhongguo/server/adapters/filestore"
-	"github.com/beilunyang/openhongguo/server/internal/favorite"
-	"github.com/beilunyang/openhongguo/server/internal/history"
-	"github.com/beilunyang/openhongguo/server/internal/logger"
-	"github.com/beilunyang/openhongguo/server/internal/webserver"
-	"github.com/beilunyang/openhongguo/server/sdk"
-	"github.com/beilunyang/openhongguo/web"
+	"github.com/beilunyang/openhongguo/adapters"
+	"github.com/beilunyang/openhongguo/adapters/filestore"
+	"github.com/beilunyang/openhongguo/sdk"
+	"github.com/whiletoken/openhongguo/server/internal/favorite"
+	"github.com/whiletoken/openhongguo/server/internal/history"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
+	"github.com/whiletoken/openhongguo/server/internal/webserver"
+	"github.com/whiletoken/openhongguo/web"
 )
 
 func envOr(key, fallback string) string {

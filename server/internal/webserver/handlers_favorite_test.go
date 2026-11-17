@@ -1,4 +1,4 @@
-﻿package webserver
+package webserver
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/internal/favorite"
+	"github.com/whiletoken/openhongguo/server/internal/favorite"
 )
 
 func TestHandleFavorites(t *testing.T) {

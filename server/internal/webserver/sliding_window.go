@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/beilunyang/openhongguo/server/internal/logger"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
 
-	"github.com/beilunyang/openhongguo/server/sdk"
+	"github.com/beilunyang/openhongguo/sdk"
 )
 
 const (

@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/beilunyang/openhongguo/server/internal/history"
-	"github.com/beilunyang/openhongguo/server/internal/logger"
-	"github.com/beilunyang/openhongguo/server/internal/media"
-	"github.com/beilunyang/openhongguo/server/sdk"
+	"github.com/whiletoken/openhongguo/server/internal/history"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
+	"github.com/whiletoken/openhongguo/server/internal/media"
+	"github.com/beilunyang/openhongguo/sdk"
 )
 
 // handleSystemStatus returns environment tools readiness and cache metrics.
