@@ -98,6 +98,12 @@ func main() {
 
 	// Initialize SDK Client with SmartTransport
 	store := filestore.New(filepath.Join(dir, "anonymous.json"))
+	if p, loadErr := store.Load(context.Background()); loadErr == nil && p != nil {
+		if p.DeviceID == "" || p.DeviceID == "0" || p.InstallID == "" || p.InstallID == "0" {
+			logger.Warn("检测到未完成注册的残留匿名设备档案，正在自动清理重置...")
+			_ = store.Reset(context.Background())
+		}
+	}
 	client, err := adapters.NewClient("", sdk.Options{
 		Transport:          webserver.NewSmartTransport(),
 		ProfileStore:       store,

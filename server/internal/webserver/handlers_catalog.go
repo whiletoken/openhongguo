@@ -1,6 +1,7 @@
 package webserver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,16 +10,42 @@ import (
 
 	"github.com/beilunyang/openhongguo/sdk"
 	"github.com/beilunyang/openhongguo/sdk/model"
+	"github.com/whiletoken/openhongguo/server/internal/logger"
 )
+
+func executeWithRetry[T any](ctx context.Context, s *Server, fn func() (T, error)) (T, error) {
+	val, err := fn()
+	if err != nil && isGuestRegistrationError(err) {
+		logger.Warnf("检测到匿名设备注册未就绪或身份异常 (%v)，正在自动重置设备并重试...", err)
+		if resetErr := s.client.ResetDevice(ctx); resetErr == nil {
+			return fn()
+		} else {
+			logger.Errorf("自动重置匿名设备失败: %v", resetErr)
+		}
+	}
+	return val, err
+}
+
+func isGuestRegistrationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "no guest identity") ||
+		strings.Contains(msg, "anonymous registration") ||
+		strings.Contains(msg, "guest ticket missing")
+}
 
 // handleDiscover handles catalog channel feed requests.
 func (s *Server) handleDiscover(w http.ResponseWriter, r *http.Request) {
 	channel := r.URL.Query().Get("channel")
 	cursor := r.URL.Query().Get("cursor")
 
-	page, err := s.client.Discover(r.Context(), sdk.DiscoverOptions{
-		Channel: channel,
-		Cursor:  cursor,
+	page, err := executeWithRetry(r.Context(), s, func() (*sdk.Page[model.SeriesSummary], error) {
+		return s.client.Discover(r.Context(), sdk.DiscoverOptions{
+			Channel: channel,
+			Cursor:  cursor,
+		})
 	})
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
@@ -42,9 +69,11 @@ func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		filters = strings.Split(filter, ",")
 	}
 
-	page, err := s.client.Search(r.Context(), q, sdk.SearchOptions{
-		Cursor:  cursor,
-		Filters: filters,
+	page, err := executeWithRetry(r.Context(), s, func() (*sdk.Page[model.SeriesSummary], error) {
+		return s.client.Search(r.Context(), q, sdk.SearchOptions{
+			Cursor:  cursor,
+			Filters: filters,
+		})
 	})
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
@@ -60,7 +89,9 @@ func (s *Server) handleSeries(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "series id is required")
 		return
 	}
-	series, err := s.client.GetSeries(r.Context(), id)
+	series, err := executeWithRetry(r.Context(), s, func() (*model.Series, error) {
+		return s.client.GetSeries(r.Context(), id)
+	})
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -75,7 +106,9 @@ func (s *Server) handleEpisodes(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "series id is required")
 		return
 	}
-	episodes, err := s.client.ListEpisodes(r.Context(), id, sdk.EpisodeOptions{})
+	episodes, err := executeWithRetry(r.Context(), s, func() (*sdk.Page[model.Episode], error) {
+		return s.client.ListEpisodes(r.Context(), id, sdk.EpisodeOptions{})
+	})
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -101,7 +134,9 @@ func (s *Server) handlePlayback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pb, err := s.client.ResolvePlayback(r.Context(), episodeID, sdk.PlaybackOptions{})
+	pb, err := executeWithRetry(r.Context(), s, func() (*model.Playback, error) {
+		return s.client.ResolvePlayback(r.Context(), episodeID, sdk.PlaybackOptions{})
+	})
 	if err != nil && !errors.Is(err, sdk.ErrDRMProtected) {
 		jsonError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -146,9 +181,11 @@ func (s *Server) handleDanmaku(w http.ResponseWriter, r *http.Request) {
 		startMs, _ = strconv.ParseInt(startMsStr, 10, 64)
 	}
 
-	page, err := s.client.ListDanmaku(r.Context(), seriesID, episodeID, sdk.DanmakuOptions{
-		Cursor:  cursor,
-		StartMs: startMs,
+	page, err := executeWithRetry(r.Context(), s, func() (*model.DanmakuPage, error) {
+		return s.client.ListDanmaku(r.Context(), seriesID, episodeID, sdk.DanmakuOptions{
+			Cursor:  cursor,
+			StartMs: startMs,
+		})
 	})
 	if err != nil {
 		jsonError(w, http.StatusInternalServerError, err.Error())

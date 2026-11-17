@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -85,6 +86,11 @@ func NewSmartTransport() *SmartTransport {
 				}
 			}
 
+			// Prioritize IPv4 addresses first to avoid unreachable IPv6 timeouts
+			sort.SliceStable(ips, func(i, j int) bool {
+				return ips[i].To4() != nil && ips[j].To4() == nil
+			})
+
 			for _, ip := range ips {
 				if !ip.IsUnspecified() && !ip.IsLoopback() {
 					target := net.JoinHostPort(ip.String(), port)
@@ -94,6 +100,8 @@ func NewSmartTransport() *SmartTransport {
 					}
 				}
 			}
+
+			return nil, fmt.Errorf("smarttransport: host %s resolved to adblock sinkhole and public DNS fallback failed", host)
 		}
 
 		return dialer.DialContext(ctx, network, addr)
@@ -129,9 +137,19 @@ func (st *SmartTransport) lookupPublicDNS(ctx context.Context, host string) []ne
 				return d.DialContext(dialCtx, "udp", dnsServer)
 			},
 		}
+
+		// Prefer IPv4 first
 		cLookup, cancel := context.WithTimeout(ctx, 4*time.Second)
-		ips, err := resolver.LookupIP(cLookup, "ip", host)
+		ips, err := resolver.LookupIP(cLookup, "ip4", host)
 		cancel()
+
+		// Fallback to general IP lookup if IPv4 returned nothing
+		if err != nil || len(ips) == 0 {
+			cLookup2, cancel2 := context.WithTimeout(ctx, 4*time.Second)
+			ips, err = resolver.LookupIP(cLookup2, "ip", host)
+			cancel2()
+		}
+
 		if err == nil && len(ips) > 0 {
 			var valid []net.IP
 			for _, ip := range ips {
