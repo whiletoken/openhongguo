@@ -30,7 +30,7 @@ windows: ## 构建 Windows 桌面客户端 (Rust) bin/ohg-desktop.exe
 desktop: windows ## 兼容别名：构建 Windows 桌面客户端
 
 sdk-fetch: ## 更新/拉取最新上游 SDK 依赖与 CLI 工具
-	go get -u github.com/beilunyang/openhongguo@v0.3.0
+	go get -u github.com/beilunyang/openhongguo@v0.4.0
 	go mod tidy
 	go build -ldflags="-s -w" -o bin/ohg github.com/beilunyang/openhongguo/cmd/ohg
 

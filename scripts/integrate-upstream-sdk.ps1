@@ -4,7 +4,7 @@
 # ==============================================================================
 
 param (
-    [string]$Version = "v0.3.0",
+    [string]$Version = "v0.4.0",
     [switch]$ForceRebuild = $false
 )
 
